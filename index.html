@@ -4,96 +4,124 @@
     <meta charset="UTF-8" />
     <title>Vozes da Pirâmide</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="stylesheet" href="style.css" />
-</head>
-<body class="theme-dark">
 
+    <link rel="stylesheet" href="style.css" />
+    <script src="script.js" defer></script>
+</head>
+<body>
 <div class="container">
 
     <!-- ============================================= -->
-    <!-- HEADER / STATUS / TEMA                        -->
+    <!-- CARD CABEÇALHO + STATUS + TÓPICOS QUENTES     -->
     <!-- ============================================= -->
-    <header class="header">
-        <div>
-            <h1><span>Vozes da pirâmide</span></h1>
-            <p class="subtitle">
-                Desabafos anônimos sobre o dia a dia dentro da empresa.
-            </p>
-        </div>
-
-        <div class="header-right">
-            <div class="status-pill">
-                <div id="status-dot" class="status-dot offline"></div>
-                <span id="status-text">Verificando servidor...</span>
+    <div class="card card-header">
+        <div class="status-bar">
+            <div>
+                <h1><span>Vozes da pirâmide</span></h1>
+                <div class="subtitle">
+                    Rede anônima para relatar abusos e absurdos do trabalho.
+                </div>
             </div>
 
-            <button id="theme-toggle" class="icon-btn" title="Alternar tema">
-                🌙
-            </button>
+            <div class="status-group">
+                <div id="status-pill" class="status-pill">
+                    <div id="status-dot" class="status-dot offline"></div>
+                    <span id="status-text">Conectando...</span>
+                </div>
+                <div class="badge" id="version-text">API: --</div>
+            </div>
         </div>
-    </header>
+
+        <!-- Tópicos em alta -->
+        <div class="trending-row">
+            <span class="trending-label">🔥 Assuntos em alta:</span>
+            <div id="trending-tags" class="trending-tags">
+                <span class="trending-tag muted">Carregando...</span>
+            </div>
+        </div>
+    </div>
 
     <!-- ============================================= -->
-    <!-- ASSUNTOS QUENTES                              -->
+    <!-- CARD PARA CRIAR POSTAGEM                      -->
     <!-- ============================================= -->
-    <section class="card topics-card">
-        <div class="topics-header">
-            <span class="topics-title">Assuntos mais quentes</span>
-            <span class="topics-hint">baseado nas hashtags dos últimos desabafos</span>
+    <div class="card">
+        <div class="post-form-header">
+            <div class="form-title">Publique sua indignação, anonimamente.</div>
         </div>
-        <div id="top-topics" class="topics-row">
-            <!-- preenchido via JS -->
-            <span class="topic-pill empty">Sem assuntos ainda. Use hashtags como #exausto, #chefia, #metas...</span>
-        </div>
-    </section>
 
-    <!-- ============================================= -->
-    <!-- CARD NOVO POST                                -->
-    <!-- ============================================= -->
-    <section class="card">
         <div class="input-wrapper">
             <div class="inside-label">
-                <span class="brand">Protesto anônimo</span>
-                <span class="tagline">— escreva sem citar nomes reais</span>
+                <span class="brand">Protesto Anônimo</span>
+                <span class="tagline">— sem cadastro, sem rastros</span>
             </div>
             <textarea id="post-text" rows="3"
-                      placeholder="Conte o que está acontecendo aí dentro. Você pode usar hashtags como #exausto #chefia #sobrecarregado..."></textarea>
+                      placeholder="Conte o que acontece aí dentro (sem citar nomes reais ou dados que possam te identificar)..."></textarea>
         </div>
 
-        <div class="post-toolbar">
-            <button id="btn-escolher-classe" class="secondary small-btn">
+        <div id="post-error" class="error-msg" style="display:none;"></div>
+
+        <div class="top-actions">
+            <button id="btn-escolher-classe" class="secondary">
                 Escolher posição na pirâmide
             </button>
-            <span id="post-error" class="error-msg"></span>
-
-            <div class="post-toolbar-right">
-                <button id="btn-postar" class="primary" disabled>
-                    Postar anonimamente
-                </button>
-            </div>
-        </div>
-    </section>
-
-    <!-- ============================================= -->
-    <!-- FEED                                          -->
-    <!-- ============================================= -->
-    <section class="card">
-        <div class="feed-header-row">
-            <div class="feed-title">Feed de indignações</div>
-            <button id="btn-reload" class="secondary small-btn">
-                Atualizar feed
+            <button id="btn-postar" class="primary" disabled>
+                Postar anonimamente
             </button>
         </div>
+    </div>
 
-        <div id="feed" class="feed">
-            <!-- posts via JS -->
+    <!-- ============================================= -->
+    <!-- CARD DO FEED                                  -->
+    <!-- ============================================= -->
+    <div class="card">
+        <div class="feed-header">
+            <div class="feed-title">Feed de indignações</div>
+            <button id="btn-recarregar" class="secondary small-btn">
+                Atualizar
+            </button>
         </div>
-    </section>
+        <div id="feed" class="feed"></div>
+        <div id="feed-empty" class="empty-state" style="display:none;">
+            Nenhuma indignação por aqui ainda. Seja a primeira voz da pirâmide.
+        </div>
+    </div>
 
 </div>
 
 <!-- ============================================= -->
-<!-- MODAL PIRÂMIDE                                -->
+<!-- BOTÃO FIXO DE AJUDA ( ? )                     -->
+<!-- ============================================= -->
+<button id="help-btn" class="help-fab">?</button>
+
+<!-- ============================================= -->
+<!-- MODAL DE AJUDA                                -->
+<!-- ============================================= -->
+<div id="help-modal" class="modal-backdrop">
+    <div class="modal">
+        <div class="modal-header">
+            <div class="modal-title">Sobre este espaço</div>
+            <button id="help-close" class="modal-close secondary">fechar</button>
+        </div>
+        <div class="modal-sub">
+            Este site não pede login, não pede nome, não registra quem você é.
+        </div>
+        <div class="help-body">
+            <p>
+                Aqui você pode desabafar de forma <strong>anônima</strong> sobre abuso,
+                assédio moral, pressão exagerada ou qualquer situação injusta que vive no trabalho.
+            </p>
+            <p>
+                <strong>APENAS UM TRABALHADOR INDIGNADO</strong>.
+            </p>
+            <p>
+                Evite citar nomes completos, CPFs, CNPJs ou dados que identifiquem você ou terceiros.
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================= -->
+<!-- MODAL: ESCOLHER CLASSE DA PIRÂMIDE            -->
 <!-- ============================================= -->
 <div id="class-modal-backdrop" class="modal-backdrop">
     <div class="modal">
@@ -107,62 +135,43 @@
         </div>
 
         <div class="pyramid-wrapper">
-            <!-- Pirâmide com 3 blocos que formam 1 triângulo -->
+            <!-- Pirâmide 3D segmentada em 3 faixas -->
             <svg id="pyramid-svg" class="pyramid-svg" viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg">
-                <!-- contorno geral -->
-                <polygon class="outline" points="50,5 5,115 95,115" />
+                <!-- Faixa TOPO -->
+                <polygon data-classe="topo"
+                         points="50,5 34,45 66,45"
+                         class="pyr-segment"></polygon>
 
-                <!-- BASE: área entre y=70 e y=115 -->
-                <polygon data-classe="base" points="50,70 12,115 88,115" />
+                <!-- Faixa MEIO -->
+                <polygon data-classe="meio"
+                         points="34,45 66,45 83,85 17,85"
+                         class="pyr-segment"></polygon>
 
-                <!-- MEIO: área entre y=40 e y=70 (dentro do triângulo) -->
-                <polygon data-classe="meio" points="50,40 22,95 78,95" />
+                <!-- Faixa BASE -->
+                <polygon data-classe="base"
+                         points="17,85 83,85 95,115 5,115"
+                         class="pyr-segment"></polygon>
 
-                <!-- TOPO: área entre y=5 e y=40 -->
-                <polygon data-classe="topo" points="50,10 34,50 66,50" />
+                <!-- Contorno geral -->
+                <polygon class="outline"
+                         points="50,5 5,115 95,115 50,5"></polygon>
 
-                <!-- linhas internas -->
-                <line x1="23" y1="95" x2="77" y2="95" stroke="#e5e7eb" stroke-width="1.3" />
-                <line x1="34" y1="50" x2="66" y2="50" stroke="#e5e7eb" stroke-width="1.3" />
+                <!-- Linhas horizontais -->
+                <line x1="34" y1="45" x2="66" y2="45" class="pyr-line" />
+                <line x1="17" y1="85" x2="83" y2="85" class="pyr-line" />
 
-                <!-- labels -->
-                <text x="50" y="34" text-anchor="middle">TOPO</text>
-                <text x="50" y="73" text-anchor="middle">MEIO</text>
-                <text x="50" y="105" text-anchor="middle">BASE</text>
+                <!-- Labels -->
+                <text x="50" y="30" text-anchor="middle" class="pyr-label">TOPO</text>
+                <text x="50" y="65" text-anchor="middle" class="pyr-label">MEIO</text>
+                <text x="50" y="103" text-anchor="middle" class="pyr-label">BASE</text>
             </svg>
         </div>
 
         <div class="modal-footer">
-            Nada é salvo sobre você. Apenas o texto, a classe e as hashtags.
+            Nada é salvo sobre você. Apenas o texto, a classe e as hashtags do desabafo.
         </div>
     </div>
 </div>
 
-<!-- ============================================= -->
-<!-- MODAL DE AJUDA ( ? )                          -->
-<!-- ============================================= -->
-<div id="help-modal" class="modal-backdrop">
-    <div class="modal">
-        <div class="modal-header">
-            <div class="modal-title">Sobre este lugar</div>
-            <button id="help-close" class="modal-close secondary">fechar</button>
-        </div>
-        <div class="modal-sub">
-            Apenas um trabalhador indignado.
-        </div>
-        <p class="help-text">
-            Esse espaço é um experimento de desabafos anônimos sobre o trabalho.
-            Evite citar nomes, CNPJs ou qualquer coisa que identifique pessoas diretamente.
-            Use hashtags para marcar assuntos (#exausto, #chefia, #salário, #burnout...).
-        </p>
-    </div>
-</div>
-
-<!-- ============================================= -->
-<!-- BOTÃO FIXO "?"                                -->
-<!-- ============================================= -->
-<button id="help-btn" class="help-floating">?</button>
-
-<script src="script.js"></script>
 </body>
 </html>
