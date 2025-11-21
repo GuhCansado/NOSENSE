@@ -4,6 +4,11 @@
     <meta charset="UTF-8" />
     <title>Vozes da Pirâmide</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- =============================== -->
+    <!--            ESTILOS             -->
+    <!-- =============================== -->
+
     <style>
         :root {
             --base-color: #22c55e;
@@ -324,7 +329,10 @@
             margin-top: 4px;
         }
 
-        /* MODAL PIRÂMIDE */
+        /* ===============================
+           MODAL PIRÂMIDE
+        =============================== */
+
         .modal-backdrop {
             position: fixed;
             inset: 0;
@@ -348,10 +356,10 @@
         .modal {
             width: 100%;
             max-width: 420px;
-            background: radial-gradient(circle at top, rgba(30, 64, 175, 0.55), rgba(15, 23, 42, 0.98));
+            background: radial-gradient(circle at top, rgba(30, 64, 175, 0.45), rgba(15, 23, 42, 0.98));
             border-radius: 22px;
             border: 1px solid rgba(148, 163, 184, 0.45);
-            box-shadow: 0 24px 70px rgba(0, 0, 0, 0.85);
+            box-shadow: 0 24px 70px rgba(0, 0, 0, 0.8);
             padding: 16px 18px 18px;
             transform: scale(0.96) translateY(8px);
             opacity: 0;
@@ -389,74 +397,100 @@
             font-size: 0.8rem;
         }
 
-        /* PIRÂMIDE SVG */
+        /* ===============================
+           PIRÂMIDE 3D BONITA
+        =============================== */
+
         .pyramid-wrapper {
             display: flex;
             justify-content: center;
             margin: 10px 0 6px;
         }
 
-        .pyramid-svg {
-            width: 240px;
-            max-width: 100%;
-            filter: drop-shadow(0 14px 30px rgba(15, 23, 42, 0.9));
+        .pyramid {
+            position: relative;
+            width: 230px;
+            height: 180px;
         }
 
-        .pyr-area {
+        .pyr-layer {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            clip-path: polygon(50% 0, 100% 100%, 0 100%);
             cursor: pointer;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding-bottom: 8px;
+            color: #0b1120;
+            font-weight: 700;
+            letter-spacing: 0.03em;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.4);
             transition: transform 0.18s ease-out, filter 0.18s ease-out;
-            transform-origin: center;
         }
 
-        .pyr-area:hover {
-            filter: brightness(1.18);
-            transform: translateY(-1px);
-        }
-
-        .pyr-area.selected {
-            filter: brightness(1.3);
-            transform: translateY(-2px) scale(1.03);
-        }
-
-        .modal-footer {
+        .pyr-layer span {
             font-size: 0.78rem;
-            color: var(--muted);
-            text-align: center;
-            margin-top: 4px;
+            text-transform: uppercase;
         }
 
-        @media (max-width: 600px) {
-            .card {
-                border-radius: 16px;
-            }
-
-            .status-bar {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 4px;
-            }
-
-            .modal {
-                border-radius: 18px;
-            }
+        .pyr-layer.topo {
+            top: 0;
+            width: 38%;
+            height: 55px;
+            background: linear-gradient(to bottom, #fecaca, #ef4444);
         }
+
+        .pyr-layer.meio {
+            top: 50px;
+            width: 70%;
+            height: 60px;
+            background: linear-gradient(to bottom, #bfdbfe, #3b82f6);
+        }
+
+        .pyr-layer.base {
+            top: 105px;
+            width: 100%;
+            height: 70px;
+            background: linear-gradient(to bottom, #bbf7d0, #22c55e);
+        }
+
+        .pyr-layer:hover {
+            transform: translateX(-50%) scale(1.03);
+            filter: brightness(1.09);
+        }
+
+        .pyr-layer.selected {
+            transform: translateX(-50%) scale(1.06);
+            filter: brightness(1.15);
+        }
+
     </style>
 </head>
+
+
+
 <body>
 <div class="container">
-    <!-- CARD PRINCIPAL -->
+
+    <!-- ================================================= -->
+    <!-- CARD PRINCIPAL PARA POSTAR -->
+    <!-- ================================================= -->
+
     <div class="card">
         <div class="status-bar">
             <div>
                 <h1><span>Vozes da pirâmide</span></h1>
                 <div class="subtitle">
-                    Desabafe sobre a empresa, sem expor seu nome. Só sua voz importa aqui.
+                    Desabafe de forma anônima sobre abusos da empresa.
                 </div>
             </div>
+
             <div>
                 <div id="status-pill" class="status-pill">
                     <div id="status-dot" class="status-dot offline"></div>
-                    <span id="status-text">Conectando...</span>
+                    <span id="status-text">Conectando à API...</span>
                 </div>
                 <div class="badge" id="version-text">API: --</div>
             </div>
@@ -470,107 +504,74 @@
                 <span class="tagline">— escreva sem medo</span>
             </div>
             <textarea id="post-text" rows="3"
-                      placeholder="Resuma o que te incomoda no trabalho, sem citar seu nome ou dados diretos..."></textarea>
+                placeholder="Conte o que você vive aí dentro (sem citar nomes ou dados que te identifiquem)..."></textarea>
         </div>
 
         <div class="top-actions">
-            <button id="btn-post" class="primary">
-                <span>Postar anonimamente</span>
-            </button>
+            <button id="btn-post" class="primary">Postar anonimamente</button>
         </div>
     </div>
 
-    <!-- CARD FEED -->
+
+    <!-- ================================================= -->
+    <!-- FEED DE INDIGNAÇÕES -->
+    <!-- ================================================= -->
+
     <div class="card">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
             <div style="font-weight:600; font-size:0.95rem;">Feed de indignações</div>
             <div class="badge" style="font-size:0.78rem;">Atualiza ao carregar ou postar</div>
         </div>
+
         <div id="feed" class="feed"></div>
         <div id="feed-empty" class="empty-state" style="display:none;">
-            Ainda não há desabafos. Você pode ser a primeira voz da pirâmide.
+            Nenhuma indignação registrada ainda. Seja a primeira voz da pirâmide.
         </div>
     </div>
+
 </div>
 
-<!-- MODAL DA PIRÂMIDE -->
+
+
+<!-- ================================================= -->
+<!-- MODAL PARA ESCOLHER A CLASSE DA PIRÂMIDE -->
+<!-- ================================================= -->
+
 <div id="class-modal-backdrop" class="modal-backdrop">
     <div class="modal">
+
         <div class="modal-header">
-            <div class="modal-title">Onde você se enxerga na pirâmide?</div>
+            <div class="modal-title">Escolha sua posição na pirâmide</div>
             <button id="modal-close" class="modal-close">fechar</button>
         </div>
+
         <div class="modal-sub">
-            Clique em uma faixa da pirâmide para publicar seu protesto com essa classe.
+            Clique em uma parte da pirâmide para continuar.
         </div>
+
         <div class="pyramid-wrapper">
-            <svg id="pyramid-svg" class="pyramid-svg" viewBox="0 0 100 100">
-                <!-- Triângulo externo -->
-                <polygon points="50,2 98,98 2,98"
-                         stroke="#ffffffcc"
-                         stroke-width="2"
-                         fill="none" />
-
-                <!-- TOP -->
-                <polygon class="pyr-area" data-classe="topo"
-                         points="50,2 66,35 34,35"
-                         fill="url(#gradTopo)">
-                </polygon>
-                <text x="50" y="24" text-anchor="middle"
-                      fill="#ffffff" font-size="8" font-weight="600">
-                    TOPO
-                </text>
-
-                <!-- MEIO -->
-                <polygon class="pyr-area" data-classe="meio"
-                         points="34,35 66,35 80,66 20,66"
-                         fill="url(#gradMeio)">
-                </polygon>
-                <text x="50" y="52" text-anchor="middle"
-                      fill="#ffffff" font-size="8" font-weight="600">
-                    MEIO
-                </text>
-
-                <!-- BASE -->
-                <polygon class="pyr-area" data-classe="base"
-                         points="20,66 80,66 98,98 2,98"
-                         fill="url(#gradBase)">
-                </polygon>
-                <text x="50" y="84" text-anchor="middle"
-                      fill="#ffffff" font-size="8" font-weight="600">
-                    BASE
-                </text>
-
-                <!-- Linhas internas -->
-                <line x1="34" y1="35" x2="66" y2="35" stroke="#ffffffaa" stroke-width="1" />
-                <line x1="20" y1="66" x2="80" y2="66" stroke="#ffffffaa" stroke-width="1" />
-
-                <!-- Gradientes -->
-                <defs>
-                    <linearGradient id="gradTopo" x1="0" y1="-1" x2="0" y2="1">
-                        <stop offset="0%" stop-color="#fca5a5" />
-                        <stop offset="100%" stop-color="#ef4444" />
-                    </linearGradient>
-
-                    <linearGradient id="gradMeio" x1="0" y1="-1" x2="0" y2="1">
-                        <stop offset="0%" stop-color="#93c5fd" />
-                        <stop offset="100%" stop-color="#3b82f6" />
-                    </linearGradient>
-
-                    <linearGradient id="gradBase" x1="0" y1="-1" x2="0" y2="1">
-                        <stop offset="0%" stop-color="#86efac" />
-                        <stop offset="100%" stop-color="#22c55e" />
-                    </linearGradient>
-                </defs>
-            </svg>
+            <div id="pyramid" class="pyramid">
+                <div class="pyr-layer topo" data-classe="topo"><span>TOPO</span></div>
+                <div class="pyr-layer meio" data-classe="meio"><span>MEIO</span></div>
+                <div class="pyr-layer base" data-classe="base"><span>BASE</span></div>
+            </div>
         </div>
+
         <div class="modal-footer">
-            Só o texto e a classe são salvos. Nada que te identifique.
+            Nada é salvo sobre você. Apenas o texto e a classe.
         </div>
+
     </div>
 </div>
 
+
+
+<!-- ================================================= -->
+<!-- SCRIPT PRINCIPAL -->
+<!-- ================================================= -->
+
 <script>
+
     let API_BASE = null;
     let API_STATUS = "offline";
     let API_VERSION = "--";
@@ -587,25 +588,23 @@
 
     const modalBackdrop = document.getElementById("class-modal-backdrop");
     const modalCloseBtn = document.getElementById("modal-close");
+    const pyramidEl = document.getElementById("pyramid");
 
-    // callback atual da escolha de classe
-    let currentClassCallback = null;
-    // texto aguardando escolha de classe
     let stagedText = "";
 
-    function setStatus(online, version) {
-        API_STATUS = online ? "online" : "offline";
-        statusDot.classList.remove("online", "offline");
-        statusDot.classList.add(online ? "online" : "offline");
-        statusText.textContent = online ? "Servidor Online" : "Servidor Offline";
-        versionText.textContent = "API: " + (version || "--");
-        btnPost.disabled = !online;
-    }
+
+    /* ======================================================
+       STATUS DO SERVIDOR VIA GITHUB RAW
+    ====================================================== */
 
     async function carregarConfig() {
         try {
-            const resp = await fetch("server_status.json?cache=" + Date.now());
+            const resp = await fetch(
+                "https://raw.githubusercontent.com/GuhCansado/NOSENSE/main/server_status.json?cache=" + Date.now()
+            );
+
             if (!resp.ok) throw new Error("Falha ao carregar server_status.json");
+
             const data = await resp.json();
 
             API_BASE = data.url_api_base;
@@ -619,13 +618,37 @@
             } else {
                 feedEmptyEl.style.display = "block";
             }
+
         } catch (err) {
             console.error(err);
             errorGlobal.style.display = "block";
-            errorGlobal.textContent = "Não foi possível ler o server_status.json. Verifique o GitHub Pages.";
+            errorGlobal.textContent = "Erro ao ler o server_status.json do GitHub Pages.";
             setStatus(false, "--");
         }
     }
+
+
+    /* ======================================================
+       ATUALIZAR STATUS VISUAL
+    ====================================================== */
+
+    function setStatus(online, version) {
+        API_STATUS = online ? "online" : "offline";
+
+        statusDot.classList.remove("online", "offline");
+        statusDot.classList.add(online ? "online" : "offline");
+
+        statusText.textContent = online ? "Servidor Online" : "Servidor Offline";
+        versionText.textContent = "API: " + (version || "--");
+
+        btnPost.disabled = !online;
+    }
+
+
+
+    /* ======================================================
+       CARREGAR FEED
+    ====================================================== */
 
     async function carregarFeed() {
         if (!API_BASE) return;
@@ -633,24 +656,47 @@
         try {
             const resp = await fetch(API_BASE + "/api/posts");
             if (!resp.ok) throw new Error("Erro ao buscar posts");
+
             const posts = await resp.json();
             renderFeed(posts);
+
         } catch (err) {
             console.error(err);
             errorGlobal.style.display = "block";
-            errorGlobal.textContent = "Erro ao carregar o feed. Verifique se o servidor ainda está rodando.";
+            errorGlobal.textContent = "Erro ao carregar o feed.";
         }
     }
 
+
+    /* ======================================================
+       EXIBIR FEED
+    ====================================================== */
+
+    function escapeHtml(text) {
+        return text.replace(/[&<>"']/g, (c) => ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#039;"
+        }[c]));
+    }
+
+
     function renderFeed(posts) {
+
         feedEl.innerHTML = "";
+
         if (!posts || posts.length === 0) {
             feedEmptyEl.style.display = "block";
             return;
         }
+
         feedEmptyEl.style.display = "none";
 
+
         for (const post of posts) {
+
             const postDiv = document.createElement("div");
             postDiv.className = "post";
             postDiv.dataset.postId = post.id;
@@ -662,61 +708,74 @@
                     <div class="avatar" style="background:${avatarBg};">
                         ${post.avatar?.emoji || "🙂"}
                     </div>
+
                     <div class="post-meta">
                         <div class="alias">${post.alias || "Anônimo"}</div>
                         <div class="meta-line">
-                            <span>${post.classe_label || ""}</span>
+                            <span>${post.classe_label}</span>
                             <span>•</span>
                             <span>${new Date(post.created_at).toLocaleString("pt-BR")}</span>
                             <span>•</span>
-                            <span>${(post.replies_count || 0)} respostas</span>
+                            <span>${post.replies_count || 0} respostas</span>
                         </div>
                     </div>
                 </div>
-                <div class="post-text">${escapeHtml(post.texto || "")}</div>
+
+                <div class="post-text">${escapeHtml(post.texto)}</div>
+
                 <div class="reply-box">
                     <div style="font-size:0.78rem; color:var(--muted); margin-bottom:4px;">
-                        Responder anonimamente (classe escolhida na resposta)
+                        Responder anonimamente
                     </div>
-                    <textarea class="reply-textarea" rows="2" placeholder="Escreva sua resposta..."></textarea>
-                    <div style="margin-top:6px; display:flex; flex-wrap:wrap; gap:6px; align-items:center;">
+
+                    <textarea class="reply-textarea" rows="2"
+                        placeholder="Escreva sua resposta..."></textarea>
+
+                    <div style="margin-top:6px; display:flex; gap:6px;">
                         <button class="small-btn primary btn-reply">Responder</button>
                         <button class="small-btn secondary btn-toggle-replies">Ver respostas</button>
                     </div>
+
                     <div class="error-msg reply-error" style="display:none;"></div>
                     <div class="replies" style="display:none;"></div>
                 </div>
             `;
 
+
+            /* BOTÃO RESPONDER */
             const btnReply = postDiv.querySelector(".btn-reply");
-            const replyTextarea = postDiv.querySelector(".reply-textarea");
+            const replyTA = postDiv.querySelector(".reply-textarea");
             const replyError = postDiv.querySelector(".reply-error");
 
-            btnReply.addEventListener("click", async () => {
-                const text = replyTextarea.value.trim();
+            btnReply.addEventListener("click", () => {
+                const text = replyTA.value.trim();
                 if (!text) {
                     replyError.style.display = "block";
-                    replyError.textContent = "Digite algo para responder.";
+                    replyError.textContent = "Digite algo.";
                     return;
                 }
                 replyError.style.display = "none";
 
                 stagedText = text;
                 openClassModal(async (classe) => {
-                    await enviarReply(post.id, stagedText, classe, replyError, replyTextarea, postDiv);
+                    await enviarReply(post.id, stagedText, classe, replyError, replyTA, postDiv);
                 });
             });
 
-            const btnToggleReplies = postDiv.querySelector(".btn-toggle-replies");
+
+            /* VER RESPOSTAS */
+            const btnToggle = postDiv.querySelector(".btn-toggle-replies");
             const repliesDiv = postDiv.querySelector(".replies");
-            btnToggleReplies.addEventListener("click", async () => {
+
+            btnToggle.addEventListener("click", async () => {
+
                 if (repliesDiv.style.display === "none") {
                     await carregarReplies(postDiv, post.id);
                     repliesDiv.style.display = "block";
-                    btnToggleReplies.textContent = "Esconder respostas";
+                    btnToggle.textContent = "Esconder respostas";
                 } else {
                     repliesDiv.style.display = "none";
-                    btnToggleReplies.textContent = "Ver respostas";
+                    btnToggle.textContent = "Ver respostas";
                 }
             });
 
@@ -724,82 +783,107 @@
         }
     }
 
+
+
+    /* ======================================================
+       CARREGAR RESPOSTAS
+    ====================================================== */
+
     async function carregarReplies(postDiv, postId) {
         const repliesDiv = postDiv.querySelector(".replies");
         repliesDiv.innerHTML = "";
 
         try {
-            const resp = await fetch(API_BASE + "/api/posts/" + encodeURIComponent(postId) + "/replies");
-            if (!resp.ok) throw new Error("Erro ao buscar replies");
+            const resp = await fetch(API_BASE + "/api/posts/" + postId + "/replies");
             const replies = await resp.json();
 
             if (!replies || replies.length === 0) {
-                repliesDiv.innerHTML = `<div class="empty-state" style="padding:4px 0;">Nenhuma resposta ainda.</div>`;
+                repliesDiv.innerHTML =
+                    `<div class="empty-state" style="padding:4px 0;">Nenhuma resposta ainda.</div>`;
                 return;
             }
 
             for (const r of replies) {
                 const avatarBg = r.avatar?.bg_color || "#4b5563";
+
                 const replyEl = document.createElement("div");
                 replyEl.className = "reply";
+
                 replyEl.innerHTML = `
                     <div class="reply-header">
                         <div class="avatar" style="width:26px;height:26px;font-size:0.95rem;background:${avatarBg};">
                             ${r.avatar?.emoji || "🙂"}
                         </div>
                         <div>
-                            <div class="reply-alias">${r.alias || "Anônimo"}</div>
+                            <div class="reply-alias">${r.alias}</div>
                             <div style="font-size:0.7rem; color:var(--muted);">
-                                ${r.classe_label || ""} • ${new Date(r.created_at).toLocaleString("pt-BR")}
+                                ${new Date(r.created_at).toLocaleString("pt-BR")}
                             </div>
                         </div>
                     </div>
-                    <div class="reply-text">${escapeHtml(r.texto || "")}</div>
+                    <div class="reply-text">${escapeHtml(r.texto)}</div>
                 `;
+
                 repliesDiv.appendChild(replyEl);
             }
+
         } catch (err) {
             repliesDiv.innerHTML = `<div class="error-msg">Erro ao carregar respostas.</div>`;
         }
     }
 
-    async function enviarReply(postId, texto, classe, replyError, replyTextarea, postDiv) {
+
+
+    /* ======================================================
+       ENVIAR RESPOSTA
+    ====================================================== */
+
+    async function enviarReply(postId, texto, classe, replyError, replyTA, postDiv) {
         try {
-            const resp = await fetch(API_BASE + "/api/posts/" + encodeURIComponent(postId) + "/replies", {
+            const resp = await fetch(API_BASE + "/api/posts/" + postId + "/replies", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {"Content-Type": "application/json"},
                 body: JSON.stringify({ texto, classe })
             });
-            const data = await resp.json().catch(() => ({}));
+
+            const data = await resp.json();
 
             if (!resp.ok) {
-                const msg = data.error || "Erro ao enviar resposta.";
                 replyError.style.display = "block";
-                replyError.textContent = msg;
-            } else {
-                replyTextarea.value = "";
-                await carregarReplies(postDiv, postId);
-                await carregarFeed();
+                replyError.textContent = data.error || "Erro ao responder.";
+                return;
             }
+
+            replyTA.value = "";
+            await carregarReplies(postDiv, postId);
+            await carregarFeed();
+
         } catch (err) {
             replyError.style.display = "block";
-            replyError.textContent = "Erro de conexão ao enviar resposta.";
+            replyError.textContent = "Erro ao conectar com o servidor.";
         }
     }
+
+
+
+    /* ======================================================
+       ENVIAR POSTAGEM
+    ====================================================== */
 
     btnPost.addEventListener("click", () => {
         errorGlobal.style.display = "none";
 
         const texto = postTextEl.value.trim();
+
         if (!texto) {
             errorGlobal.style.display = "block";
-            errorGlobal.textContent = "Escreva algo antes de postar.";
+            errorGlobal.textContent = "Escreva algo.";
             return;
         }
 
         if (!API_BASE || API_STATUS !== "online") {
             errorGlobal.style.display = "block";
-            errorGlobal.textContent = "Servidor Offline. Não é possível postar agora.";
+            errorGlobal.textContent = "Servidor Offline.";
             return;
         }
 
@@ -809,15 +893,18 @@
         });
     });
 
+
     async function enviarPost(texto, classe) {
         btnPost.disabled = true;
+
         try {
             const resp = await fetch(API_BASE + "/api/posts", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {"Content-Type": "application/json"},
                 body: JSON.stringify({ texto, classe })
             });
-            const data = await resp.json().catch(() => ({}));
+
+            const data = await resp.json();
 
             if (!resp.ok) {
                 errorGlobal.style.display = "block";
@@ -826,69 +913,68 @@
                 postTextEl.value = "";
                 await carregarFeed();
             }
+
         } catch (err) {
-            console.error(err);
             errorGlobal.style.display = "block";
-            errorGlobal.textContent = "Erro de conexão ao enviar postagem.";
-        } finally {
-            btnPost.disabled = false;
+            errorGlobal.textContent = "Erro ao conectar.";
         }
+
+        btnPost.disabled = false;
     }
 
-    function escapeHtml(text) {
-        const map = {
-            '&': '&amp;',
-            '<': '&lt;',
-            '>': '&gt;',
-            '"': '&quot;',
-            "'": '&#039;'
-        };
-        return text.replace(/[&<>"']/g, m => map[m]);
-    }
 
-    // ---------- LÓGICA DO MODAL / PIRÂMIDE ----------
+
+    /* ======================================================
+       MODAL DA PIRÂMIDE
+    ====================================================== */
 
     function openClassModal(onSelect) {
-        currentClassCallback = onSelect;
-        document.querySelectorAll(".pyr-area").forEach(a => a.classList.remove("selected"));
+
+        pyramidEl.querySelectorAll(".pyr-layer").forEach(el => el.classList.remove("selected"));
+
         modalBackdrop.classList.add("show");
+
+        const handler = async (e) => {
+            const layer = e.target.closest(".pyr-layer");
+            if (!layer) return;
+
+            pyramidEl.querySelectorAll(".pyr-layer").forEach(el => el.classList.remove("selected"));
+            layer.classList.add("selected");
+
+            setTimeout(async () => {
+                closeClassModal();
+                if (onSelect) onSelect(layer.dataset.classe);
+            }, 120);
+        };
+
+        pyramidEl._handler = handler;
+        pyramidEl.addEventListener("click", handler);
     }
+
 
     function closeClassModal() {
         modalBackdrop.classList.remove("show");
-        currentClassCallback = null;
+
+        if (pyramidEl._handler) {
+            pyramidEl.removeEventListener("click", pyramidEl._handler);
+            pyramidEl._handler = null;
+        }
     }
 
     modalCloseBtn.addEventListener("click", closeClassModal);
 
     modalBackdrop.addEventListener("click", (e) => {
-        if (e.target === modalBackdrop) {
-            closeClassModal();
-        }
+        if (e.target === modalBackdrop) closeClassModal();
     });
 
-    // click global nas áreas da pirâmide (SVG)
-    document.addEventListener("click", async (e) => {
-        if (!modalBackdrop.classList.contains("show")) return;
-        const area = e.target.closest(".pyr-area");
-        if (!area) return;
-        const classe = area.getAttribute("data-classe");
-        if (!classe || !currentClassCallback) return;
 
-        document.querySelectorAll(".pyr-area").forEach(a => a.classList.remove("selected"));
-        area.classList.add("selected");
+    /* ======================================================
+       INICIAR SISTEMA
+    ====================================================== */
 
-        const cb = currentClassCallback;
-        currentClassCallback = null;
-
-        setTimeout(async () => {
-            closeClassModal();
-            await cb(classe);
-        }, 130);
-    });
-
-    // inicializa
     carregarConfig();
+
 </script>
+
 </body>
 </html>
