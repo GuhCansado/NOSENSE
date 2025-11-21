@@ -70,7 +70,7 @@ body {
 
 h1 {
     font-size: 1.4rem;
-    margin: 0 0 4px;
+    margin: 0 0 8px;
     font-weight: 600;
 }
 
@@ -86,14 +86,14 @@ h1 span {
 .subtitle {
     color: var(--text-muted);
     font-size: 0.85rem;
-    margin-bottom: 18px;
+    margin-bottom: 28px;
 }
 
 .status-bar {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    gap: 6px;
     margin-bottom: 12px;
 }
 
@@ -128,7 +128,7 @@ h1 span {
     align-items: center;
     justify-content: center;
     font-size: 0.75rem;
-    padding: 4px 8px;
+    padding: 8px 16px;
     border-radius: 999px;
     border: 1px solid rgba(55, 65, 81, 0.9);
     color: var(--text-muted);
@@ -190,7 +190,7 @@ textarea::placeholder {
 }
 
 .inside-label .brand {
-    font-weight: 600;
+    font-weight: 6;
 }
 
 /* =========================
@@ -276,13 +276,13 @@ button:disabled {
 .post-header {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 30px;
     margin-bottom: 6px;
 }
 
 .avatar {
-    width: 32px;
-    height: 32px;
+    width: 64px;
+    height: 64px;
     border-radius: 999px;
     display: flex;
     align-items: center;
@@ -315,7 +315,7 @@ button:disabled {
 
 .post-text {
     font-size: 0.9rem;
-    margin-bottom: 6px;
+    margin-bottom: 36px;
     white-space: pre-wrap;
 }
 
