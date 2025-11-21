@@ -473,96 +473,74 @@ button:disabled {
     text-align: center;
 }
 
-/* ================================
-   PIRÂMIDE REFEITA 100% EM CSS
-   ================================ */
+/* =========================
+   PIRÂMIDE CORRIGIDA (SVG)
+   ========================= */
 
-.pyramid-wrapper {
-    display: flex;
-    justify-content: center;
-    margin: 20px 0;
+.pyramid-svg {
+    width: 220px;
+    max-width: 100%;
+    display: block;
 }
 
-.pyramid {
-    width: 200px;
-    position: relative;
-    aspect-ratio: 1 / 1.2;
+/* Todas as áreas clicáveis */
+.pyramid-svg polygon[data-classe] {
+    cursor: pointer;
+    transition: 
+        transform .20s ease-out,
+        filter .20s ease-out,
+        stroke-width .18s ease-out;
+    transform-origin: center;
 }
 
-/* Base do triângulo */
-.pyramid::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
-    background: #0d1220;
-    border: 3px solid #d1d5db;
-    border-bottom-width: 4px;
-    border-radius: 4px;
+/* Cores suaves iguais ao tema */
+.pyramid-svg polygon[data-classe="base"] {
+    fill: rgba(124, 58, 237, 0.22);
 }
 
-/* Linhas internas */
-.pyramid::after {
-    content: "";
-    position: absolute;
-    left: 8%;
-    width: 84%;
-    top: 38%;
-    height: 3px;
-    background: #d1d5db;
-    box-shadow: 0 55px 0 #d1d5db;
+.pyramid-svg polygon[data-classe="meio"] {
+    fill: rgba(37, 99, 235, 0.22);
 }
 
-/* Camadas clicáveis */
-.layer {
-    position: absolute;
-    left: 0;
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    color: #e5e7eb;
+.pyramid-svg polygon[data-classe="topo"] {
+    fill: rgba(168, 85, 247, 0.22);
+}
+
+/* Separadores */
+.pyramid-svg line {
+    opacity: 0.8;
+}
+
+/* Contorno geral */
+.pyramid-svg .outline {
+    stroke: #e5e7eb;
+    stroke-width: 3;
+    fill: none;
+}
+
+/* Hover */
+.pyramid-svg polygon[data-classe]:hover {
+    filter: brightness(1.3);
+    transform: scale(1.03);
+}
+
+/* Selecionado */
+.pyramid-svg polygon[data-classe].selected {
+    stroke: #a78bfa;
+    stroke-width: 2.4;
+    filter: brightness(1.4);
+    transform: scale(1.05);
+}
+
+/* Labels */
+.pyramid-svg text {
+    fill: #f1f5f9;
+    font-size: 10px;
     font-weight: 600;
     letter-spacing: 0.1em;
-    cursor: pointer;
-    transition: transform .18s ease-out, filter .18s ease-out;
+    user-select: none;
 }
 
-/* TOPO */
-.layer.topo {
-    top: 0;
-    height: 33%;
-    clip-path: polygon(50% 0%, 80% 100%, 20% 100%);
-    background: rgba(76, 29, 149, 0.35);
-}
-
-/* MEIO */
-.layer.meio {
-    top: 33%;
-    height: 34%;
-    clip-path: polygon(20% 0%, 80% 0%, 95% 100%, 5% 100%);
-    background: rgba(37, 99, 235, 0.25);
-}
-
-/* BASE */
-.layer.base {
-    top: 67%;
-    height: 33%;
-    clip-path: polygon(5% 0%, 95% 0%, 100% 100%, 0% 100%);
-    background: rgba(76, 29, 149, 0.15);
-}
-
-/* Hover / seleção */
-.layer:hover {
-    transform: scale(1.05);
-    filter: brightness(1.25);
-}
-
-.layer.selected {
-    transform: scale(1.08);
-    filter: brightness(1.35);
-    outline: 2px solid #6366f1;
-}
 
 
 /* =========================
