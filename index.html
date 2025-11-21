@@ -44,7 +44,7 @@
                 </div>
 
                 <div class="composer-footer">
-                    <!-- botão invisível só para manter o JS feliz, se quiser pode remover depois -->
+                    <!-- Mantido só para compatibilidade com o JS -->
                     <button id="btn-escolher-classe" class="ghost-btn" type="button" style="display:none">
                         Escolher posição na pirâmide
                     </button>
@@ -67,7 +67,7 @@
                 </div>
 
                 <div id="feed" class="feed-list">
-                    <!-- preenchido pelo JS -->
+                    <!-- preenchido via JS -->
                 </div>
             </section>
         </main>
@@ -88,13 +88,29 @@
                 Clique em um dos blocos para dizer de onde vem sua indignação.
             </p>
 
-            <!-- PIRÂMIDE 3D EM SVG -->
+            <!-- PIRÂMIDE -->
             <div class="pyramid-wrapper">
                 <svg id="pyramid-svg" viewBox="0 0 200 180" class="pyramid-svg">
+                    <defs>
+                        <linearGradient id="gradBase" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#23274b" />
+                            <stop offset="100%" stop-color="#15172c" />
+                        </linearGradient>
+                        <linearGradient id="gradMiddle" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#4248a8" />
+                            <stop offset="100%" stop-color="#262a6b" />
+                        </linearGradient>
+                        <linearGradient id="gradTop" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#8f7bff" />
+                            <stop offset="100%" stop-color="#4c45ff" />
+                        </linearGradient>
+                    </defs>
+
                     <!-- BASE -->
                     <polygon
                         data-classe="base"
                         class="pyramid-block base-block"
+                        fill="url(#gradBase)"
                         points="20,140 180,140 150,170 50,170"
                     ></polygon>
 
@@ -102,6 +118,7 @@
                     <polygon
                         data-classe="meio"
                         class="pyramid-block middle-block"
+                        fill="url(#gradMiddle)"
                         points="40,105 160,105 140,140 60,140"
                     ></polygon>
 
@@ -109,6 +126,7 @@
                     <polygon
                         data-classe="topo"
                         class="pyramid-block top-block"
+                        fill="url(#gradTop)"
                         points="70,60 130,60 115,105 85,105"
                     ></polygon>
                 </svg>
@@ -127,14 +145,5 @@
     </div>
 
     <script src="script.js"></script>
-    <script>
-        // Ajuste extra: se tentar postar sem classe, abre o modal
-        const originalBtnPostar = document.getElementById("btn-postar");
-        const modalBackdrop = document.getElementById("class-modal-backdrop");
-
-        // O resto da lógica de postagem está no script.js (que você já tem).
-        // Aqui só garantimos que, se o JS de lá acusar erro de classe,
-        // o modal apareça quando o usuário clicar em postar sem ter escolhido.
-    </script>
 </body>
 </html>

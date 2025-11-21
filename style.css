@@ -1,4 +1,4 @@
-/* ===== RESET BÁSICO ===== */
+/* ===== RESET ===== */
 
 *,
 *::before,
@@ -118,11 +118,12 @@ body[data-theme="light"] {
     gap: 16px;
 }
 
-/* ===== CARDS & BOTÕES ===== */
+/* ===== CARDS / BOTÕES ===== */
 
 .card {
-    background: radial-gradient(circle at 0 0, rgba(255, 255, 255, 0.04), transparent 50%),
-        radial-gradient(circle at 100% 100%, rgba(108, 99, 255, 0.08), transparent 55%),
+    background:
+        radial-gradient(circle at 0 0, rgba(255, 255, 255, 0.04), transparent 55%),
+        radial-gradient(circle at 100% 100%, rgba(108, 99, 255, 0.08), transparent 65%),
         var(--bg-elevated);
     border-radius: 18px;
     border: 1px solid var(--border-subtle);
@@ -148,7 +149,11 @@ body[data-theme="light"] {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, color 0.15s ease;
+    transition:
+        transform 0.15s ease,
+        box-shadow 0.15s ease,
+        background 0.15s ease,
+        color 0.15s ease;
 }
 
 .primary-btn {
@@ -157,7 +162,7 @@ body[data-theme="light"] {
     box-shadow: 0 12px 26px rgba(0, 0, 0, 0.35);
 }
 
-.primary-btn:hover {
+.primary-btn:hover:not(.is-loading) {
     transform: translateY(-1px);
     box-shadow: 0 16px 32px rgba(0, 0, 0, 0.4);
 }
@@ -165,10 +170,9 @@ body[data-theme="light"] {
 .secondary-btn {
     background: var(--bg-soft);
     color: var(--text);
-    border-radius: 999px;
 }
 
-.secondary-btn:hover {
+.secondary-btn:hover:not(.is-loading) {
     transform: translateY(-1px);
     box-shadow: 0 12px 24px rgba(0, 0, 0, 0.25);
 }
@@ -193,6 +197,27 @@ body[data-theme="light"] {
     color: var(--text-muted);
 }
 
+/* ===== LOADING NOS BOTÕES ===== */
+
+.is-loading {
+    position: relative;
+    pointer-events: none;
+    color: transparent !important;
+}
+
+.is-loading::after {
+    content: "";
+    position: absolute;
+    inset: 50% auto auto 50%;
+    width: 16px;
+    height: 16px;
+    transform: translate(-50%, -50%);
+    border-radius: 999px;
+    border: 2px solid rgba(255, 255, 255, 0.6);
+    border-top-color: transparent;
+    animation: spin 0.7s linear infinite;
+}
+
 /* ===== COMPOSER ===== */
 
 .composer-card {
@@ -212,7 +237,8 @@ body[data-theme="light"] {
     max-height: 200px;
     border-radius: 12px;
     border: 1px solid var(--border-subtle);
-    background: radial-gradient(circle at 0 0, rgba(255, 255, 255, 0.06), transparent 70%),
+    background:
+        radial-gradient(circle at 0 0, rgba(255, 255, 255, 0.06), transparent 70%),
         var(--bg-soft);
     padding: 10px 12px;
     color: var(--text);
@@ -320,12 +346,27 @@ body[data-theme="light"] {
     font-size: 0.82rem;
 }
 
-.like-btn {
+.like-btn,
+.report-btn,
+.ver-respostas {
     padding: 4px 10px;
+    border-radius: 999px;
+    border: none;
+    font-size: 0.8rem;
+    cursor: pointer;
+    background: transparent;
+    color: var(--text-muted);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: background 0.15s ease, transform 0.15s ease;
 }
 
-.like-btn span {
-    font-weight: 600;
+.like-btn:hover,
+.report-btn:hover,
+.ver-respostas:hover {
+    background: var(--bg-soft);
+    transform: translateY(-1px);
 }
 
 .like-btn.active {
@@ -334,20 +375,7 @@ body[data-theme="light"] {
 }
 
 .report-btn {
-    padding: 4px 10px;
     color: var(--danger);
-}
-
-.ver-respostas {
-    border-radius: 999px;
-    padding: 4px 10px;
-    font-size: 0.8rem;
-    background: transparent;
-    color: var(--text-muted);
-}
-
-.ver-respostas:hover {
-    background: var(--bg-soft);
 }
 
 /* ===== CAIXA DE RESPOSTA ===== */
@@ -356,9 +384,10 @@ body[data-theme="light"] {
     margin-top: 8px;
     padding: 8px 10px;
     border-radius: 12px;
-    background: radial-gradient(circle at 100% 0, rgba(108, 99, 255, 0.16), transparent 60%),
+    background:
+        radial-gradient(circle at 100% 0, rgba(108, 99, 255, 0.16), transparent 60%),
         rgba(0, 0, 0, 0.18);
-    display: none; /* aparece só quando clicar em "Ver respostas" (JS) */
+    display: none;
 }
 
 .reply-textarea {
@@ -409,13 +438,13 @@ body[data-theme="light"] {
     white-space: pre-wrap;
 }
 
-/* ===== MODAL ===== */
+/* ===== MODAL & VIDRO FOSCO ===== */
 
 .modal-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.55);
-    backdrop-filter: blur(6px);
+    background: rgba(2, 4, 15, 0.6);
+    backdrop-filter: blur(12px);
     display: none;
     align-items: center;
     justify-content: center;
@@ -427,13 +456,16 @@ body[data-theme="light"] {
 }
 
 .modal {
-    background: var(--bg-elevated);
+    background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.02));
     border-radius: 20px;
     padding: 18px 18px 20px;
     width: min(420px, 92vw);
+    border: 1px solid rgba(255, 255, 255, 0.18);
     box-shadow: 0 22px 50px rgba(0, 0, 0, 0.6);
     position: relative;
-    animation: scaleIn 0.25s ease-out;
+    animation: modalIn 0.25s ease-out;
+    backdrop-filter: blur(18px) saturate(160%);
 }
 
 .modal h3 {
@@ -457,66 +489,56 @@ body[data-theme="light"] {
     position: absolute;
     top: 10px;
     right: 10px;
-    background: transparent;
+    background: rgba(0, 0, 0, 0.18);
     border: none;
     color: var(--text-muted);
     font-size: 1.4rem;
     cursor: pointer;
+    width: 26px;
+    height: 26px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
-/* ===== PIRÂMIDE ===== */
+/* ===== PIRÂMIDE 3D FAKE ===== */
 
 .pyramid-wrapper {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 8px;
+    perspective: 900px;
 }
 
 .pyramid-svg {
     width: 220px;
     height: auto;
-    filter: drop-shadow(0 18px 25px rgba(0, 0, 0, 0.5));
+    filter: drop-shadow(0 18px 25px rgba(0, 0, 0, 0.6));
+    transform-style: preserve-3d;
+    animation: pyramidFloat 4s ease-in-out infinite;
 }
 
 .pyramid-block {
     cursor: pointer;
-    transition: transform 0.18s ease, filter 0.18s ease, opacity 0.18s ease;
+    transition:
+        transform 0.22s ease,
+        filter 0.22s ease,
+        opacity 0.22s ease;
     transform-origin: center;
 }
 
 .pyramid-block:hover {
-    transform: translateY(-3px) scale(1.03);
-    filter: brightness(1.15);
+    transform: translateY(-4px) scale(1.03);
+    filter: brightness(1.15) drop-shadow(0 0 18px rgba(139, 130, 255, 0.65));
 }
 
 .pyramid-block.selected {
-    transform: translateY(-4px) scale(1.05);
-    filter: brightness(1.22);
-}
-
-/* cores com “efeito 3D” */
-.base-block {
-    fill: url(#baseGrad);
-}
-
-.middle-block {
-    fill: url(#middleGrad);
-}
-
-.top-block {
-    fill: url(#topGrad);
-}
-
-/* fallback se não usar <defs> no SVG (caso queira adaptar) */
-.base-block {
-    fill: linear-gradient(135deg, #23274b, #14162b);
-}
-.middle-block {
-    fill: linear-gradient(135deg, #4248a8, #262a6b);
-}
-.top-block {
-    fill: linear-gradient(135deg, #8f7bff, #4c45ff);
+    transform: translateY(-6px) scale(1.07);
+    filter:
+        brightness(1.28)
+        drop-shadow(0 0 30px rgba(167, 160, 255, 0.95));
 }
 
 .pyramid-legend {
@@ -598,14 +620,32 @@ body[data-theme="light"] {
     }
 }
 
-@keyframes scaleIn {
+@keyframes modalIn {
     from {
         opacity: 0;
-        transform: scale(0.94);
+        transform: translateY(10px) scale(0.96);
     }
     to {
         opacity: 1;
-        transform: scale(1);
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes pyramidFloat {
+    0% {
+        transform: translateY(0) rotateX(16deg);
+    }
+    50% {
+        transform: translateY(-6px) rotateX(21deg);
+    }
+    100% {
+        transform: translateY(0) rotateX(16deg);
+    }
+}
+
+@keyframes spin {
+    to {
+        transform: translate(-50%, -50%) rotate(360deg);
     }
 }
 

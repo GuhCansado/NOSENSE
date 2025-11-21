@@ -48,6 +48,48 @@ function extractTags(text) {
     return matches.map(t => t.slice(1).toLowerCase());
 }
 
+/* Botão com loading elegante */
+function setButtonLoading(btn, isLoading, labelLoading = "Carregando...") {
+    if (!btn) return;
+    if (isLoading) {
+        if (!btn.dataset.originalText) {
+            btn.dataset.originalText = btn.textContent;
+        }
+        btn.textContent = labelLoading;
+        btn.classList.add("is-loading");
+        btn.disabled = true;
+    } else {
+        btn.classList.remove("is-loading");
+        btn.disabled = false;
+        if (btn.dataset.originalText) {
+            btn.textContent = btn.dataset.originalText;
+        }
+    }
+}
+
+/* ===========================================
+   TEMA CLARO / ESCURO
+=========================================== */
+
+const themeToggle = document.getElementById("theme-toggle");
+
+function aplicarTemaInicial() {
+    const salvo = localStorage.getItem("vozespiramide_tema") || "dark";
+    document.body.dataset.theme = salvo;
+    themeToggle.textContent = salvo === "dark" ? "☾" : "☀";
+}
+
+if (themeToggle) {
+    aplicarTemaInicial();
+
+    themeToggle.addEventListener("click", () => {
+        const atual = document.body.dataset.theme === "dark" ? "light" : "dark";
+        document.body.dataset.theme = atual;
+        localStorage.setItem("vozespiramide_tema", atual);
+        themeToggle.textContent = atual === "dark" ? "☾" : "☀";
+    });
+}
+
 /* ===========================================
    STATUS DO SERVIDOR
 =========================================== */
@@ -84,18 +126,62 @@ const btnPostar = document.getElementById("btn-postar");
 
 let classeEscolhida = null;
 
-btnEscolher.onclick = () => classModal.classList.add("show");
-modalClose.onclick = () => classModal.classList.remove("show");
+/* ação pendente: post ou reply */
+let acaoPendente = null; // { tipo: 'post', texto } ou { tipo: 'reply', texto, postId, textarea, postEl }
 
-pyramidSvg.querySelectorAll("polygon[data-classe]").forEach(poly => {
-    poly.addEventListener("click", () => {
-        pyramidSvg.querySelectorAll("polygon[data-classe]").forEach(p => p.classList.remove("selected"));
-        poly.classList.add("selected");
-        classeEscolhida = poly.dataset.classe;
-        classModal.classList.remove("show");
-        btnPostar.disabled = false;
+function abrirModalClasse() {
+    if (!classModal) return;
+    classModal.classList.add("show");
+}
+
+function fecharModalClasse() {
+    if (!classModal) return;
+    classModal.classList.remove("show");
+}
+
+if (btnEscolher) {
+    btnEscolher.onclick = () => abrirModalClasse();
+}
+
+if (modalClose) {
+    modalClose.onclick = () => fecharModalClasse();
+}
+
+if (classModal) {
+    classModal.addEventListener("click", (e) => {
+        if (e.target === classModal) {
+            fecharModalClasse();
+        }
     });
-});
+}
+
+/* seleção na pirâmide com efeito de luz */
+if (pyramidSvg) {
+    pyramidSvg.querySelectorAll("polygon[data-classe]").forEach(poly => {
+        poly.addEventListener("click", () => {
+            pyramidSvg.querySelectorAll("polygon[data-classe]").forEach(p => p.classList.remove("selected"));
+            poly.classList.add("selected");
+            classeEscolhida = poly.dataset.classe;
+
+            fecharModalClasse();
+
+            // se existe ação pendente (post ou reply), executa agora
+            if (acaoPendente) {
+                if (acaoPendente.tipo === "post") {
+                    enviarPost(acaoPendente.texto);
+                } else if (acaoPendente.tipo === "reply") {
+                    enviarResposta(
+                        acaoPendente.postId,
+                        acaoPendente.texto,
+                        acaoPendente.textarea,
+                        acaoPendente.postEl
+                    );
+                }
+                acaoPendente = null;
+            }
+        });
+    });
+}
 
 /* ===========================================
    POSTAR
@@ -104,12 +190,21 @@ pyramidSvg.querySelectorAll("polygon[data-classe]").forEach(poly => {
 const postText = document.getElementById("post-text");
 const postError = document.getElementById("post-error");
 
-btnPostar.onclick = async () => {
+async function enviarPost(texto) {
     if (!API) return alert("API não carregada.");
+    if (!texto || !texto.trim()) {
+        postError.textContent = "Digite algo.";
+        return;
+    }
+    if (!classeEscolhida) {
+        postError.textContent = "Escolha a classe.";
+        acaoPendente = { tipo: "post", texto };
+        abrirModalClasse();
+        return;
+    }
 
-    const texto = postText.value.trim();
-    if (!texto) return postError.textContent = "Digite algo.";
-    if (!classeEscolhida) return postError.textContent = "Escolha a classe.";
+    postError.textContent = "";
+    setButtonLoading(btnPostar, true, "Postando...");
 
     try {
         const r = await fetch(`${API}/api/posts`, {
@@ -126,12 +221,35 @@ btnPostar.onclick = async () => {
         }
 
         postText.value = "";
-        classeEscolhida = null;
         carregarPosts();
     } catch {
         postError.textContent = "Erro ao postar";
+    } finally {
+        setButtonLoading(btnPostar, false);
     }
-};
+}
+
+if (btnPostar) {
+    btnPostar.addEventListener("click", (e) => {
+        e.preventDefault();
+        if (!postText) return;
+        const texto = postText.value.trim();
+        if (!texto) {
+            postError.textContent = "Digite algo.";
+            return;
+        }
+
+        // se ainda não tem classe -> abrir modal e registrar ação pendente
+        if (!classeEscolhida) {
+            postError.textContent = "Escolha a classe.";
+            acaoPendente = { tipo: "post", texto };
+            abrirModalClasse();
+            return;
+        }
+
+        enviarPost(texto);
+    });
+}
 
 /* ===========================================
    FEED
@@ -140,7 +258,7 @@ btnPostar.onclick = async () => {
 const feedEl = document.getElementById("feed");
 
 async function carregarPosts() {
-    if (!API) return;
+    if (!API || !feedEl) return;
 
     feedEl.innerHTML = "Carregando...";
 
@@ -166,23 +284,31 @@ function renderFeed(posts) {
         el.innerHTML = `
             <div class="post-header">
                 <div class="avatar" style="background:${p.cor_classe}">
-                    ${p.avatar?.emoji}
+                    ${p.avatar?.emoji || "😶"}
                 </div>
                 <div>
-                    <div class="alias">${p.alias}</div>
+                    <div class="alias">${escapeHtml(p.alias)}</div>
                     <div class="meta-line">${new Date(p.created_at).toLocaleString("pt-BR")}</div>
                 </div>
             </div>
 
             <div class="post-text">${highlightTags(p.texto)}</div>
 
-            <button class="secondary small-btn ver-respostas">
-                Ver respostas (${p.replies_count})
-            </button>
+            <div class="post-actions">
+                <button class="like-btn" type="button">
+                    <span>♥</span> Curtir
+                </button>
+                <button class="report-btn" type="button">
+                    🚩 Denunciar
+                </button>
+                <button class="ver-respostas" type="button">
+                    Ver respostas (${p.replies_count})
+                </button>
+            </div>
 
             <div class="reply-box">
                 <textarea class="reply-textarea" placeholder="Responder..."></textarea>
-                <button class="primary small-btn responder-btn">Enviar</button>
+                <button class="primary-btn responder-btn" type="button">Enviar</button>
                 <div class="replies"></div>
             </div>
         `;
@@ -196,8 +322,73 @@ function renderFeed(posts) {
             if (box.style.display === "block") carregarRespostas(p.id, el);
         };
 
+        // like (somente front)
+        const likeBtn = el.querySelector(".like-btn");
+        likeBtn.addEventListener("click", () => {
+            likeBtn.classList.toggle("active");
+        });
+
+        // denunciar (somente feedback visual)
+        const reportBtn = el.querySelector(".report-btn");
+        reportBtn.addEventListener("click", () => {
+            alert("Obrigado pelo aviso. Nossa equipe irá revisar esta denúncia.");
+        });
+
+        // enviar resposta
+        const replyBtn = el.querySelector(".responder-btn");
+        const replyTextarea = el.querySelector(".reply-textarea");
+
+        replyBtn.addEventListener("click", () => {
+            const texto = replyTextarea.value.trim();
+            if (!texto) return;
+
+            if (!classeEscolhida) {
+                postError.textContent = "Escolha a classe para responder.";
+                acaoPendente = {
+                    tipo: "reply",
+                    texto,
+                    postId: p.id,
+                    textarea: replyTextarea,
+                    postEl: el
+                };
+                abrirModalClasse();
+                return;
+            }
+
+            enviarResposta(p.id, texto, replyTextarea, el);
+        });
+
         feedEl.appendChild(el);
     });
+}
+
+async function enviarResposta(idPost, texto, textareaEl, postEl) {
+    if (!API) return alert("API não carregada.");
+
+    const btn = postEl.querySelector(".responder-btn");
+    setButtonLoading(btn, true, "Enviando...");
+
+    try {
+        const r = await fetch(`${API}/api/posts/${idPost}/replies`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ texto, classe: classeEscolhida })
+        });
+
+        const js = await r.json();
+
+        if (js.error) {
+            alert(js.error);
+            return;
+        }
+
+        textareaEl.value = "";
+        carregarRespostas(idPost, postEl);
+    } catch {
+        alert("Erro ao enviar resposta.");
+    } finally {
+        setButtonLoading(btn, false);
+    }
 }
 
 async function carregarRespostas(id, postEl) {
@@ -212,7 +403,7 @@ async function carregarRespostas(id, postEl) {
             const d = document.createElement("div");
             d.className = "reply";
             d.innerHTML = `
-                <div class="reply-alias">${rp.alias}</div>
+                <div class="reply-alias">${escapeHtml(rp.alias)}</div>
                 <div class="reply-text">${highlightTags(rp.texto)}</div>
             `;
             box.appendChild(d);
