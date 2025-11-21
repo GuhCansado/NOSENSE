@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <title>Protesto Anônimo – Pirâmide de Classes</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+        :root {
+            --base-color: #22c55e;
+            --meio-color: #3b82f6;
+            --topo-color: #ef4444;
+            --bg: #0b1120;
+            --card-bg: #020617;
+            --text: #e5e7eb;
+            --muted: #9ca3af;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: radial-gradient(circle at top, #1e293b, #020617 45%);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            padding: 24px 16px 64px;
+        }
+
+        h1 {
+            font-size: 1.9rem;
+            margin-bottom: 4px;
+        }
+
+        h1 span {
+            display: inline-block;
+            background: linear-gradient(to right, var(--base-color), var(--meio-color), var(--topo-color));
+            -webkit-background-clip: text;
+            color: transparent;
+            font-weight: 800;
+        }
+
+        .subtitle {
+            color: var(--muted);
+            font-size: 0.9rem;
+            margin-bottom: 24px;
+        }
+
+        .card {
+            background: rgba(15, 23, 42, 0.95);
+            border-radius: 20px;
+            padding: 16px 18px;
+            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.65);
+            border: 1px solid rgba(148, 163, 184, 0.16);
+            margin-bottom: 16px;
+        }
+
+        .status-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: rgba(15, 23, 42, 0.9);
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 999px;
+        }
+
+        .status-dot.online { background: #22c55e; }
+        .status-dot.offline { background: #ef4444; }
+
+        .badge {
+            font-size: 0.75rem;
+            padding: 4px 8px;
+            border-radius: 999px;
+            border: 1px solid rgba(148, 163, 184, 0.4);
+            color: var(--muted);
+        }
+
+        textarea, input[type="text"] {
+            width: 100%;
+            background: rgba(15, 23, 42, 0.9);
+            border-radius: 12px;
+            border: 1px solid rgba(148, 163, 184, 0.4);
+            padding: 10px 12px;
+            color: var(--text);
+            font-size: 0.95rem;
+            resize: vertical;
+        }
+
+        textarea::placeholder {
+            color: rgba(148, 163, 184, 0.9);
+        }
+
+        button {
+            border-radius: 999px;
+            border: none;
+            padding: 8px 16px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        button.primary {
+            background: linear-gradient(to right, #22c55e, #3b82f6);
+            color: #0b1120;
+        }
+
+        button.secondary {
+            background: transparent;
+            color: var(--muted);
+        }
+
+        button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .piramide {
+            margin-top: 10px;
+            display: grid;
+            gap: 4px;
+        }
+
+        .classe-opcao {
+            cursor: pointer;
+            border-radius: 999px;
+            padding: 6px 10px;
+            font-size: 0.82rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border: 1px solid transparent;
+            background: rgba(15, 23, 42, 0.9);
+        }
+
+        .classe-opcao span.label {
+            font-weight: 600;
+        }
+
+        .classe-opcao span.desc {
+            font-size: 0.75rem;
+            color: var(--muted);
+        }
+
+        .classe-opcao .color-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 999px;
+        }
+
+        .classe-opcao.base .color-dot { background: var(--base-color); }
+        .classe-opcao.meio .color-dot { background: var(--meio-color); }
+        .classe-opcao.topo .color-dot { background: var(--topo-color); }
+
+        .classe-opcao.selected {
+            border-color: rgba(248, 250, 252, 0.9);
+            box-shadow: 0 0 0 1px rgba(248, 250, 252, 0.2);
+        }
+
+        .feed {
+            margin-top: 8px;
+        }
+
+        .post {
+            border-radius: 16px;
+            padding: 12px 12px;
+            border: 1px solid rgba(31, 41, 55, 0.9);
+            background: radial-gradient(circle at top left, rgba(51, 65, 85, 0.5), rgba(15, 23, 42, 0.95));
+            margin-bottom: 10px;
+        }
+
+        .post-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 6px;
+        }
+
+        .avatar {
+            width: 34px;
+            height: 34px;
+            border-radius: 999px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        .post-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .alias {
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .meta-line {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            font-size: 0.75rem;
+            color: var(--muted);
+        }
+
+        .post-text {
+            font-size: 0.93rem;
+            margin-bottom: 6px;
+            white-space: pre-wrap;
+        }
+
+        .small-btn {
+            font-size: 0.78rem;
+            padding: 4px 8px;
+            border-radius: 999px;
+        }
+
+        .reply-box {
+            margin-top: 6px;
+            padding-top: 6px;
+            border-top: 1px dashed rgba(148, 163, 184, 0.35);
+        }
+
+        .replies {
+            margin-top: 4px;
+        }
+
+        .reply {
+            margin-top: 4px;
+            padding: 6px 8px;
+            border-radius: 10px;
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(31, 41, 55, 0.9);
+        }
+
+        .reply-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 2px;
+        }
+
+        .reply-alias {
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .reply-text {
+            font-size: 0.83rem;
+            white-space: pre-wrap;
+        }
+
+        .empty-state {
+            font-size: 0.85rem;
+            color: var(--muted);
+            text-align: center;
+            padding: 16px 0 0;
+        }
+
+        .error-msg {
+            color: #fecaca;
+            font-size: 0.8rem;
+            margin-top: 4px;
+        }
+
+        @media (max-width: 600px) {
+            .card {
+                border-radius: 16px;
+            }
+
+            .status-bar {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="card">
+        <div class="status-bar">
+            <div>
+                <h1><span>Protesto Anônimo</span></h1>
+                <div class="subtitle">
+                    Desabafe sobre abusos da empresa sem expor seu nome. Classifique sua posição na
+                    pirâmide e veja como outras pessoas da base, meio e topo respondem.
+                </div>
+            </div>
+            <div>
+                <div id="status-pill" class="status-pill">
+                    <div id="status-dot" class="status-dot offline"></div>
+                    <span id="status-text">Conectando à API...</span>
+                </div>
+                <div class="badge" id="version-text">API: --</div>
+            </div>
+        </div>
+
+        <div id="error-global" class="error-msg" style="display:none;"></div>
+
+        <label style="font-size:0.85rem; color:var(--muted); margin-bottom:4px; display:block;">
+            Sua indignação (anônima)
+        </label>
+        <textarea id="post-text" rows="3"
+                  placeholder="Descreva o que acontece na empresa sem citar nomes ou dados que te identifiquem diretamente..."></textarea>
+
+        <div style="margin-top:8px; font-size:0.8rem; color:var(--muted);">
+            Escolha onde você se enxerga na pirâmide:
+        </div>
+        <div class="piramide" id="post-class-selector">
+            <div class="classe-opcao base" data-classe="base">
+                <div>
+                    <div class="label">Base</div>
+                    <div class="desc">Quem aguenta o tranco todo dia.</div>
+                </div>
+                <div class="color-dot"></div>
+            </div>
+            <div class="classe-opcao meio" data-classe="meio">
+                <div>
+                    <div class="label">Centro</div>
+                    <div class="desc">Espremido entre cobrança e execução.</div>
+                </div>
+                <div class="color-dot"></div>
+            </div>
+            <div class="classe-opcao topo" data-classe="topo">
+                <div>
+                    <div class="label">Topo</div>
+                    <div class="desc">Quem decide metas, cortes e pressões.</div>
+                </div>
+                <div class="color-dot"></div>
+            </div>
+        </div>
+
+        <div style="margin-top:10px; display:flex; justify-content:flex-end; gap:8px; align-items:center;">
+            <button id="btn-post" class="primary">
+                <span>Postar anonimamente</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+            <div style="font-weight:600; font-size:0.95rem;">Feed de Indignações</div>
+            <div class="badge" style="font-size:0.78rem;">Atualiza automatic. no carregamento</div>
+        </div>
+        <div id="feed" class="feed"></div>
+        <div id="feed-empty" class="empty-state" style="display:none;">
+            Nenhuma indignação registrada ainda. Seja a primeira voz anônima da pirâmide.
+        </div>
+    </div>
+</div>
+
+<script>
+    let API_BASE = null;
+    let API_STATUS = "offline";
+    let API_VERSION = "--";
+
+    const statusDot = document.getElementById("status-dot");
+    const statusText = document.getElementById("status-text");
+    const versionText = document.getElementById("version-text");
+    const errorGlobal = document.getElementById("error-global");
+
+    const postTextEl = document.getElementById("post-text");
+    const postClassSelector = document.getElementById("post-class-selector");
+    const btnPost = document.getElementById("btn-post");
+    const feedEl = document.getElementById("feed");
+    const feedEmptyEl = document.getElementById("feed-empty");
+
+    let selectedPostClass = "base"; // default
+
+    // Seleção da classe para post principal
+    postClassSelector.addEventListener("click", (e) => {
+        const opcao = e.target.closest(".classe-opcao");
+        if (!opcao) return;
+        const classe = opcao.getAttribute("data-classe");
+        if (!classe) return;
+        selectedPostClass = classe;
+        document.querySelectorAll(".classe-opcao").forEach(el => el.classList.remove("selected"));
+        opcao.classList.add("selected");
+    });
+    // Deixa "base" selecionado no início
+    document.querySelector('.classe-opcao.base').classList.add('selected');
+
+    function setStatus(online, version) {
+        API_STATUS = online ? "online" : "offline";
+        statusDot.classList.remove("online", "offline");
+        statusDot.classList.add(online ? "online" : "offline");
+        statusText.textContent = online ? "Servidor Online" : "Servidor Offline";
+        versionText.textContent = "API: " + (version || "--");
+        btnPost.disabled = !online;
+    }
+
+    async function carregarConfig() {
+        try {
+            // Ajuste o caminho se o server_status.json ficar em outra pasta
+            const resp = await fetch("server_status.json?cache=" + Date.now());
+            if (!resp.ok) throw new Error("Falha ao carregar server_status.json");
+            const data = await resp.json();
+
+            API_BASE = data.url_api_base;  // ex: https://xxxx.ngrok-free.app
+            API_VERSION = data.version_api || "--";
+
+            const online = data.status_servidor === "Online";
+            setStatus(online, API_VERSION);
+
+            if (online) {
+                await carregarFeed();
+            } else {
+                feedEmptyEl.style.display = "block";
+            }
+        } catch (err) {
+            console.error(err);
+            errorGlobal.style.display = "block";
+            errorGlobal.textContent = "Não foi possível ler o server_status.json. Verifique o GitHub Pages.";
+            setStatus(false, "--");
+        }
+    }
+
+    async function carregarFeed() {
+        if (!API_BASE) return;
+
+        try {
+            const resp = await fetch(API_BASE + "/api/posts");
+            if (!resp.ok) throw new Error("Erro ao buscar posts");
+            const posts = await resp.json();
+
+            renderFeed(posts);
+        } catch (err) {
+            console.error(err);
+            errorGlobal.style.display = "block";
+            errorGlobal.textContent = "Erro ao carregar o feed. Verifique se o servidor ainda está rodando.";
+        }
+    }
+
+    function renderFeed(posts) {
+        feedEl.innerHTML = "";
+        if (!posts || posts.length === 0) {
+            feedEmptyEl.style.display = "block";
+            return;
+        }
+        feedEmptyEl.style.display = "none";
+
+        for (const post of posts) {
+            const postDiv = document.createElement("div");
+            postDiv.className = "post";
+            postDiv.dataset.postId = post.id;
+
+            const avatarBg = post.avatar?.bg_color || "#4b5563";
+
+            postDiv.innerHTML = `
+                <div class="post-header">
+                    <div class="avatar" style="background:${avatarBg};">
+                        ${post.avatar?.emoji || "🙂"}
+                    </div>
+                    <div class="post-meta">
+                        <div class="alias">${post.alias || "Anônimo"}</div>
+                        <div class="meta-line">
+                            <span>${post.classe_label || ""}</span>
+                            <span>•</span>
+                            <span>${new Date(post.created_at).toLocaleString("pt-BR")}</span>
+                            <span>•</span>
+                            <span>${(post.replies_count || 0)} respostas</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="post-text">${escapeHtml(post.texto || "")}</div>
+                <div class="reply-box">
+                    <div style="font-size:0.78rem; color:var(--muted); margin-bottom:4px;">
+                        Responder anonimamente (escolha sua posição na pirâmide)
+                    </div>
+                    <textarea class="reply-textarea" rows="2" placeholder="Escreva sua resposta..."></textarea>
+                    <div style="margin-top:6px; display:flex; flex-wrap:wrap; gap:6px; align-items:center;">
+                        <div class="piramide reply-piramide">
+                            <div class="classe-opcao base" data-classe="base">
+                                <div class="label">Base</div>
+                                <div class="color-dot"></div>
+                            </div>
+                            <div class="classe-opcao meio" data-classe="meio">
+                                <div class="label">Meio</div>
+                                <div class="color-dot"></div>
+                            </div>
+                            <div class="classe-opcao topo" data-classe="topo">
+                                <div class="label">Topo</div>
+                                <div class="color-dot"></div>
+                            </div>
+                        </div>
+                        <button class="small-btn primary btn-reply">Responder</button>
+                        <button class="small-btn secondary btn-toggle-replies">Ver respostas</button>
+                    </div>
+                    <div class="error-msg reply-error" style="display:none;"></div>
+                    <div class="replies" style="display:none;"></div>
+                </div>
+            `;
+
+            // Seleção da classe nas replies (default base)
+            const replyPiramide = postDiv.querySelector(".reply-piramide");
+            replyPiramide.dataset.selectedClasse = "base";
+            replyPiramide.querySelector(".classe-opcao.base").classList.add("selected");
+
+            replyPiramide.addEventListener("click", (e) => {
+                const opcao = e.target.closest(".classe-opcao");
+                if (!opcao) return;
+                const classe = opcao.getAttribute("data-classe");
+                if (!classe) return;
+                replyPiramide.dataset.selectedClasse = classe;
+                replyPiramide.querySelectorAll(".classe-opcao").forEach(el => el.classList.remove("selected"));
+                opcao.classList.add("selected");
+            });
+
+            // Botão responder
+            const btnReply = postDiv.querySelector(".btn-reply");
+            const replyTextarea = postDiv.querySelector(".reply-textarea");
+            const replyError = postDiv.querySelector(".reply-error");
+            btnReply.addEventListener("click", async () => {
+                const text = replyTextarea.value.trim();
+                if (!text) {
+                    replyError.style.display = "block";
+                    replyError.textContent = "Digite alguma coisa para responder.";
+                    return;
+                }
+                replyError.style.display = "none";
+
+                const classe = replyPiramide.dataset.selectedClasse || "base";
+                btnReply.disabled = true;
+
+                try {
+                    const resp = await fetch(API_BASE + "/api/posts/" + encodeURIComponent(post.id) + "/replies", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ texto: text, classe })
+                    });
+                    if (!resp.ok) {
+                        const errData = await resp.json().catch(() => ({}));
+                        const msg = errData.error || "Erro ao enviar resposta.";
+                        replyError.style.display = "block";
+                        replyError.textContent = msg;
+                    } else {
+                        replyTextarea.value = "";
+                        // Atualiza replies e o contador nesse post
+                        await carregarReplies(postDiv, post.id);
+                        await carregarFeed();  // recarrega feed para atualizar contagens
+                    }
+                } catch (err) {
+                    replyError.style.display = "block";
+                    replyError.textContent = "Erro de conexão ao enviar resposta.";
+                } finally {
+                    btnReply.disabled = false;
+                }
+            });
+
+            // Botão ver respostas
+            const btnToggleReplies = postDiv.querySelector(".btn-toggle-replies");
+            const repliesDiv = postDiv.querySelector(".replies");
+            btnToggleReplies.addEventListener("click", async () => {
+                if (repliesDiv.style.display === "none") {
+                    await carregarReplies(postDiv, post.id);
+                    repliesDiv.style.display = "block";
+                    btnToggleReplies.textContent = "Esconder respostas";
+                } else {
+                    repliesDiv.style.display = "none";
+                    btnToggleReplies.textContent = "Ver respostas";
+                }
+            });
+
+            feedEl.appendChild(postDiv);
+        }
+    }
+
+    async function carregarReplies(postDiv, postId) {
+        const repliesDiv = postDiv.querySelector(".replies");
+        repliesDiv.innerHTML = "";
+
+        try {
+            const resp = await fetch(API_BASE + "/api/posts/" + encodeURIComponent(postId) + "/replies");
+            if (!resp.ok) throw new Error("Erro ao buscar replies");
+            const replies = await resp.json();
+
+            if (!replies || replies.length === 0) {
+                repliesDiv.innerHTML = `<div class="empty-state" style="padding:4px 0;">Nenhuma resposta ainda.</div>`;
+                return;
+            }
+
+            for (const r of replies) {
+                const avatarBg = r.avatar?.bg_color || "#4b5563";
+                const replyEl = document.createElement("div");
+                replyEl.className = "reply";
+                replyEl.innerHTML = `
+                    <div class="reply-header">
+                        <div class="avatar" style="width:26px;height:26px;font-size:0.95rem;background:${avatarBg};">
+                            ${r.avatar?.emoji || "🙂"}
+                        </div>
+                        <div>
+                            <div class="reply-alias">${r.alias || "Anônimo"}</div>
+                            <div style="font-size:0.7rem; color:var(--muted);">
+                                ${r.classe_label || ""} • ${new Date(r.created_at).toLocaleString("pt-BR")}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="reply-text">${escapeHtml(r.texto || "")}</div>
+                `;
+                repliesDiv.appendChild(replyEl);
+            }
+        } catch (err) {
+            repliesDiv.innerHTML = `<div class="error-msg">Erro ao carregar respostas.</div>`;
+        }
+    }
+
+    btnPost.addEventListener("click", async () => {
+        errorGlobal.style.display = "none";
+
+        const texto = postTextEl.value.trim();
+        if (!texto) {
+            errorGlobal.style.display = "block";
+            errorGlobal.textContent = "Escreva sua indignação antes de postar.";
+            return;
+        }
+
+        if (!API_BASE || API_STATUS !== "online") {
+            errorGlobal.style.display = "block";
+            errorGlobal.textContent = "Servidor Offline. Não é possível postar agora.";
+            return;
+        }
+
+        btnPost.disabled = true;
+
+        try {
+            const resp = await fetch(API_BASE + "/api/posts", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ texto, classe: selectedPostClass })
+            });
+            const data = await resp.json().catch(() => ({}));
+
+            if (!resp.ok) {
+                errorGlobal.style.display = "block";
+                errorGlobal.textContent = data.error || "Erro ao criar postagem.";
+            } else {
+                postTextEl.value = "";
+                await carregarFeed();
+            }
+        } catch (err) {
+            console.error(err);
+            errorGlobal.style.display = "block";
+            errorGlobal.textContent = "Erro de conexão ao enviar postagem.";
+        } finally {
+            btnPost.disabled = false;
+        }
+    });
+
+    function escapeHtml(text) {
+        const map = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+        };
+        return text.replace(/[&<>"']/g, m => map[m]);
+    }
+
+    // Inicializa
+    carregarConfig();
+</script>
+</body>
+</html>
