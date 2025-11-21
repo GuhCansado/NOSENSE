@@ -1,311 +1,320 @@
-/* ============================================================
-   AUTO-DETECÇÃO DA API VIA server_status.json
-============================================================ */
+/* ===========================================
+    BUSCAR URL DA API VIA GITHUB
+=========================================== */
 
 let API = null;
 
-// Garante que nada roda antes da API carregar
-async function esperarAPI() {
-    while (!API) await new Promise(r => setTimeout(r, 50));
-}
-
-async function carregarAPI() {
+async function loadApiFromGithub() {
     try {
-        const r = await fetch("server_status.json?_=" + Date.now());
+        const r = await fetch(
+            "https://raw.githubusercontent.com/GuhCansado/NOSENSE/main/server_status.json"
+        );
+
         const js = await r.json();
 
         API = js.url_api_base + "/api";
 
-        console.log("🌐 API detectada:", API);
+        console.log("✅ API carregada:", API);
+
+        iniciarSistema(); // só inicia o site depois disso
 
     } catch (e) {
         console.error("❌ Erro ao carregar server_status.json", e);
+        document.body.innerHTML = `
+            <div style="padding:20px;color:red;font-size:20px;">
+                Erro ao carregar servidor.<br>Verifique o server_status.json.
+            </div>
+        `;
     }
 }
 
-await carregarAPI();
+loadApiFromGithub();
 
+/* ===========================================
+    SISTEMA PRINCIPAL — só roda quando API existe
+=========================================== */
+function iniciarSistema() {
 
-/* ============================================================
+/* ===========================================
+   UTILIDADES
+=========================================== */
+function escapeHtml(text) {
+    return text.replace(/[&<>"']/g, (c) =>
+        ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])
+    );
+}
+
+function highlightTags(text) {
+    return escapeHtml(text).replace(
+        /#([\p{L}\p{N}_-]+)/gu,
+        '<span class="tag">#$1</span>'
+    );
+}
+
+function extractTags(text) {
+    const matches = text.match(/#([\p{L}\p{N}_-]+)/gu) || [];
+    return matches.map((t) => t.slice(1).toLowerCase());
+}
+
+/* ===========================================
    STATUS DO SERVIDOR
-============================================================ */
+=========================================== */
 
 async function atualizarStatus() {
-    await esperarAPI();
-    try {
-        const r = await fetch(API + "/status");
-        const js = await r.json();
+    const dot = document.getElementById("status-dot");
+    const txt = document.getElementById("status-text");
 
-        document.getElementById("status-text").textContent = "Online";
-        document.getElementById("status-dot").className = "status-dot online";
+    try {
+        const r = await fetch(`${API}/status`);
+        if (!r.ok) throw new Error();
+
+        dot.className = "status-dot online";
+        txt.textContent = "Servidor Online";
 
     } catch {
-        document.getElementById("status-text").textContent = "Offline";
-        document.getElementById("status-dot").className = "status-dot offline";
+        dot.className = "status-dot offline";
+        txt.textContent = "Servidor Offline";
     }
 }
+
 setInterval(atualizarStatus, 5000);
-atualizarStatus();
 
-
-/* ============================================================
+/* ===========================================
    MODAL DA PIRÂMIDE
-============================================================ */
+=========================================== */
 
-const modal = document.getElementById("class-modal-backdrop");
+const classModal = document.getElementById("class-modal-backdrop");
 const btnEscolher = document.getElementById("btn-escolher-classe");
 const modalClose = document.getElementById("modal-close");
+const pyramidSvg = document.getElementById("pyramid-svg");
+const btnPostar = document.getElementById("btn-postar");
 
 let classeEscolhida = null;
 
-btnEscolher.onclick = () => modal.classList.add("show");
-modalClose.onclick = () => modal.classList.remove("show");
+btnEscolher.onclick = () => classModal.classList.add("show");
+modalClose.onclick = () => classModal.classList.remove("show");
 
-// Seleção dos blocos 3D da pirâmide
-document.querySelectorAll(".pyramid-block").forEach(block => {
-    block.addEventListener("click", () => {
-        document.querySelectorAll(".pyramid-block").forEach(b => b.classList.remove("selected"));
+pyramidSvg
+    .querySelectorAll("polygon[data-classe]")
+    .forEach((poly) => {
+        poly.addEventListener("click", () => {
+            pyramidSvg
+                .querySelectorAll("polygon[data-classe]")
+                .forEach((p) => p.classList.remove("selected"));
 
-        block.classList.add("selected");
-        classeEscolhida = block.dataset.classe;
+            poly.classList.add("selected");
+            classeEscolhida = poly.dataset.classe;
+            classModal.classList.remove("show");
 
-        modal.classList.remove("show");
-        document.getElementById("btn-postar").disabled = false;
+            btnPostar.disabled = false;
+        });
     });
-});
 
+/* ===========================================
+   AJUDA ( ? )
+=========================================== */
 
-/* ============================================================
+document.getElementById("help-btn").onclick = () =>
+    document.getElementById("help-modal").classList.add("show");
+
+document.getElementById("help-close").onclick = () =>
+    document.getElementById("help-modal").classList.remove("show");
+
+/* ===========================================
    POSTAR INDIGNAÇÃO
-============================================================ */
+=========================================== */
 
-document.getElementById("btn-postar").onclick = async () => {
-    await esperarAPI();
+const postText = document.getElementById("post-text");
+const postError = document.getElementById("post-error");
+const btnReload = document.getElementById("btn-reload");
 
-    const texto = document.getElementById("post-text").value.trim();
-    if (!texto || !classeEscolhida) return;
+btnPostar.addEventListener("click", async () => {
+    const texto = postText.value.trim();
+    postError.textContent = "";
 
-    const r = await fetch(API + "/posts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ texto, classe: classeEscolhida })
-    });
-
-    const js = await r.json();
-
-    if (js.error) {
-        document.getElementById("post-error").textContent = js.error;
+    if (!texto) {
+        postError.textContent = "Digite algo antes de postar.";
+        return;
+    }
+    if (!classeEscolhida) {
+        postError.textContent = "Escolha a sua posição na pirâmide.";
         return;
     }
 
-    document.getElementById("post-text").value = "";
-    classeEscolhida = null;
+    try {
+        const r = await fetch(`${API}/posts`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ texto, classe: classeEscolhida }),
+        });
 
-    carregarPosts();
-};
+        const js = await r.json();
 
+        if (!r.ok || js.error) {
+            postError.textContent = js.error || "Erro ao postar.";
+        } else {
+            postText.value = "";
+            classeEscolhida = null;
+            carregarPosts();
+        }
+    } catch {
+        postError.textContent = "Erro ao conectar com o servidor.";
+    }
+});
 
-/* ============================================================
+/* ===========================================
    FEED
-============================================================ */
+=========================================== */
+
+const feedEl = document.getElementById("feed");
+const topicsEl = document.getElementById("top-topics");
 
 async function carregarPosts() {
-    await esperarAPI();
+    feedEl.innerHTML = `<div class="loading">Carregando...</div>`;
 
-    const r = await fetch(API + "/posts");
-    const posts = await r.json();
+    try {
+        const r = await fetch(`${API}/posts`);
+        const posts = await r.json();
 
-    const feed = document.getElementById("feed");
-    feed.innerHTML = "";
+        renderFeed(posts);
+        atualizarTopicos(posts);
 
-    atualizarTrending(posts);
+    } catch {
+        feedEl.innerHTML = `<div class="loading">Erro ao carregar.</div>`;
+    }
+}
 
-    posts.forEach(p => {
+function atualizarTopicos(posts) {
+    const counts = {};
+    posts.forEach((p) => {
+        extractTags(p.texto || "").forEach((t) => {
+            counts[t] = (counts[t] || 0) + 1;
+        });
+    });
+
+    topicsEl.innerHTML = "";
+
+    const hot = Object.entries(counts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 2);
+
+    if (!hot.length) {
+        topicsEl.innerHTML =
+            '<span class="topic-pill empty">Sem assuntos ainda.</span>';
+        return;
+    }
+
+    hot.forEach(([tag, n]) => {
+        const el = document.createElement("span");
+        el.className = "topic-pill";
+        el.textContent = `🔥 #${tag} (${n})`;
+        topicsEl.appendChild(el);
+    });
+}
+
+function renderFeed(posts) {
+    feedEl.innerHTML = "";
+
+    if (!posts.length) {
+        feedEl.innerHTML = `<div class="loading">Nenhum desabafo ainda.</div>`;
+        return;
+    }
+
+    posts.forEach((p) => {
         const div = document.createElement("div");
         div.className = "post";
 
         div.innerHTML = `
             <div class="post-header">
                 <div class="avatar" style="background:${p.cor_classe}">
-                    ${p.avatar.emoji}
+                    ${p.avatar?.emoji || "😐"}
                 </div>
 
-                <div class="post-meta">
+                <div>
                     <div class="alias">${p.alias}</div>
-                    <div class="meta-line">${new Date(p.created_at).toLocaleString()} — ${p.classe_label}</div>
+                    <div class="meta-line">
+                        ${new Date(p.created_at).toLocaleString("pt-BR")} •
+                        ${p.classe_label}
+                    </div>
                 </div>
             </div>
 
-            <div class="post-text">${p.texto}</div>
+            <div class="post-text">${highlightTags(p.texto)}</div>
 
-            <div class="post-actions">
-                <button class="vote-btn up" data-id="${p.id}">👍 ${p.votos_up || 0}</button>
-                <button class="vote-btn down" data-id="${p.id}">👎 ${p.votos_down || 0}</button>
-                <button class="denunciar-btn" data-id="${p.id}">🚨 Denunciar</button>
-            </div>
+            <button class="secondary small-btn ver-respostas">
+                Ver respostas (${p.replies_count || 0})
+            </button>
 
-            <button class="secondary small-btn ver-respostas">Ver respostas (${p.replies_count})</button>
-
-            <div class="reply-box" style="display:none;">
-                <textarea class="reply-textarea" placeholder="Escreva sua resposta..."></textarea>
-                <button class="primary responder-btn">Responder</button>
+            <div class="reply-box">
+                <textarea class="reply-textarea" rows="2"></textarea>
+                <button class="primary small-btn responder-btn">Responder</button>
                 <div class="replies"></div>
             </div>
         `;
 
-        /* -----------------------------
-           Toggle das respostas
-        ----------------------------- */
-        const btn = div.querySelector(".ver-respostas");
-        const box = div.querySelector(".reply-box");
+        const replyBox = div.querySelector(".reply-box");
+        const btnToggle = div.querySelector(".ver-respostas");
+        const textarea = div.querySelector(".reply-textarea");
 
-        btn.onclick = () => {
-            box.style.display = box.style.display === "block" ? "none" : "block";
-
-            if (box.style.display === "block") {
-                box.classList.add("open-anim");
-                carregarRespostas(p.id, div);
+        btnToggle.onclick = async () => {
+            if (replyBox.classList.contains("open")) {
+                replyBox.classList.remove("open");
+                btnToggle.textContent = `Ver respostas (${p.replies_count})`;
+            } else {
+                replyBox.classList.add("open");
+                btnToggle.textContent = "Esconder respostas";
+                await carregarRespostas(p.id, div);
             }
         };
 
-        /* -----------------------------
-           Enviar resposta
-        ----------------------------- */
         div.querySelector(".responder-btn").onclick = async () => {
-            const t = div.querySelector(".reply-textarea").value.trim();
-            if (!t) return;
+            const texto = textarea.value.trim();
+            if (!texto) return;
 
-            await fetch(API + `/posts/${p.id}/replies`, {
+            textarea.value = "";
+
+            await fetch(`${API}/posts/${p.id}/replies`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ texto: t, classe: p.classe })
+                body: JSON.stringify({ texto, classe: p.classe }),
             });
 
-            div.querySelector(".reply-textarea").value = "";
-            carregarRespostas(p.id, div);
+            await carregarRespostas(p.id, div);
         };
 
-        /* -----------------------------
-           Votação
-        ----------------------------- */
-        div.querySelector(".vote-btn.up").onclick = () => votar(p.id, "up");
-        div.querySelector(".vote-btn.down").onclick = () => votar(p.id, "down");
-
-        /* -----------------------------
-           Denúncia
-        ----------------------------- */
-        div.querySelector(".denunciar-btn").onclick = () => denunciar(p.id);
-
-        feed.appendChild(div);
+        feedEl.appendChild(div);
     });
 }
 
+async function carregarRespostas(id, div) {
+    const box = div.querySelector(".replies");
+    box.innerHTML = `<div class="loading">Carregando...</div>`;
 
-/* ============================================================
-   RESPOSTAS
-============================================================ */
+    try {
+        const r = await fetch(`${API}/posts/${id}/replies`);
+        const replies = await r.json();
 
-async function carregarRespostas(id, element) {
-    await esperarAPI();
-
-    const r = await fetch(API + `/posts/${id}/replies`);
-    const replies = await r.json();
-
-    const box = element.querySelector(".replies");
-    box.innerHTML = "";
-
-    replies.forEach(rp => {
-        const rdiv = document.createElement("div");
-        rdiv.className = "reply";
-
-        rdiv.innerHTML = `
-            <div class="reply-header">
-                <span class="reply-alias">${rp.alias}</span>
-                <span class="meta-line">${new Date(rp.created_at).toLocaleString()}</span>
-            </div>
-            <div class="reply-text">${rp.texto}</div>
-        `;
-
-        box.appendChild(rdiv);
-    });
-}
-
-
-/* ============================================================
-   VOTOS
-============================================================ */
-
-async function votar(id, tipo) {
-    await esperarAPI();
-
-    await fetch(API + "/vote", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, tipo })
-    });
-
-    carregarPosts();
-}
-
-
-/* ============================================================
-   DENÚNCIA
-============================================================ */
-
-async function denunciar(id) {
-    await esperarAPI();
-
-    await fetch(API + "/denunciar", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id })
-    });
-
-    alert("Obrigado! Nossa equipe analisará este post.");
-}
-
-
-/* ============================================================
-   TRENDING — assuntos mais comentados
-============================================================ */
-
-function atualizarTrending(posts) {
-    const trending = document.getElementById("trending");
-
-    const contagem = {};
-
-    posts.forEach(p => {
-        const palavras = p.texto.split(/\s+/);
-        palavras.forEach(w => {
-            if (w.length > 5) {
-                contagem[w] = (contagem[w] || 0) + 1;
-            }
+        box.innerHTML = "";
+        replies.forEach((rp) => {
+            const el = document.createElement("div");
+            el.className = "reply";
+            el.innerHTML = `
+                <div class="reply-header">
+                    <span class="reply-alias">${rp.alias}</span>
+                    <span class="meta-line">${new Date(
+                        rp.created_at
+                    ).toLocaleString("pt-BR")}</span>
+                </div>
+                <div class="reply-text">${highlightTags(rp.texto)}</div>
+            `;
+            box.appendChild(el);
         });
-    });
-
-    const top = Object.entries(contagem)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 2)
-        .map(t => `🔥 ${t[0]}`);
-
-    trending.textContent = top.join("    •    ");
+    } catch {
+        box.innerHTML = `<div class="loading">Erro ao carregar.</div>`;
+    }
 }
 
-
-/* ============================================================
-   MODAL DE AJUDA ( ? )
-============================================================ */
-
-const helpBtn = document.getElementById("help-btn");
-const helpModal = document.getElementById("help-modal");
-const helpClose = document.getElementById("help-close");
-
-helpBtn.onclick = () => helpModal.classList.add("show");
-helpClose.onclick = () => helpModal.classList.remove("show");
-
-
-/* ============================================================
-   START
-============================================================ */
-
+/* Inicializa */
 carregarPosts();
+
+}
