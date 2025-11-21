@@ -348,10 +348,10 @@
         .modal {
             width: 100%;
             max-width: 420px;
-            background: radial-gradient(circle at top, rgba(30, 64, 175, 0.45), rgba(15, 23, 42, 0.98));
+            background: radial-gradient(circle at top, rgba(30, 64, 175, 0.55), rgba(15, 23, 42, 0.98));
             border-radius: 22px;
             border: 1px solid rgba(148, 163, 184, 0.45);
-            box-shadow: 0 24px 70px rgba(0, 0, 0, 0.8);
+            box-shadow: 0 24px 70px rgba(0, 0, 0, 0.85);
             padding: 16px 18px 18px;
             transform: scale(0.96) translateY(8px);
             opacity: 0;
@@ -389,73 +389,33 @@
             font-size: 0.8rem;
         }
 
-        /* PIRÂMIDE 3D */
+        /* PIRÂMIDE SVG */
         .pyramid-wrapper {
             display: flex;
             justify-content: center;
             margin: 10px 0 6px;
         }
 
-        .pyramid {
-            position: relative;
-            width: 220px;
-            height: 150px;
+        .pyramid-svg {
+            width: 240px;
+            max-width: 100%;
+            filter: drop-shadow(0 14px 30px rgba(15, 23, 42, 0.9));
         }
 
-        .pyr-layer {
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-            clip-path: polygon(50% 0, 100% 100%, 0 100%);
+        .pyr-area {
             cursor: pointer;
-            display: flex;
-            align-items: flex-end;
-            justify-content: center;
-            padding-bottom: 8px;
-            color: #0b1120;
-            font-weight: 700;
-            letter-spacing: 0.03em;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.4);
-            transition: transform 0.18s ease-out, box-shadow 0.18s ease-out, filter 0.18s ease-out;
+            transition: transform 0.18s ease-out, filter 0.18s ease-out;
+            transform-origin: center;
         }
 
-        .pyr-layer span {
-            font-size: 0.78rem;
-            text-transform: uppercase;
+        .pyr-area:hover {
+            filter: brightness(1.18);
+            transform: translateY(-1px);
         }
 
-        .pyr-layer.topo {
-            top: 0;
-            width: 40%;
-            height: 40px;
-            background: linear-gradient(to bottom, #fecaca, var(--topo-color));
-            box-shadow: 0 8px 18px rgba(239, 68, 68, 0.5);
-        }
-
-        .pyr-layer.meio {
-            top: 38px;
-            width: 70%;
-            height: 46px;
-            background: linear-gradient(to bottom, #bfdbfe, var(--meio-color));
-            box-shadow: 0 10px 24px rgba(59, 130, 246, 0.45);
-        }
-
-        .pyr-layer.base {
-            top: 76px;
-            width: 100%;
-            height: 52px;
-            background: linear-gradient(to bottom, #bbf7d0, var(--base-color));
-            box-shadow: 0 12px 28px rgba(34, 197, 94, 0.45);
-        }
-
-        .pyr-layer:hover {
-            transform: translateX(-50%) translateY(-2px) scale(1.02);
-            filter: brightness(1.05);
-        }
-
-        .pyr-layer.selected {
-            transform: translateX(-50%) translateY(-3px) scale(1.04);
-            box-shadow: 0 16px 40px rgba(15, 23, 42, 0.85);
+        .pyr-area.selected {
+            filter: brightness(1.3);
+            transform: translateY(-2px) scale(1.03);
         }
 
         .modal-footer {
@@ -490,13 +450,13 @@
             <div>
                 <h1><span>Vozes da pirâmide</span></h1>
                 <div class="subtitle">
-                    Desabafe de forma anônima sobre abusos da empresa. O nome não aparece, só a sua voz.
+                    Desabafe sobre a empresa, sem expor seu nome. Só sua voz importa aqui.
                 </div>
             </div>
             <div>
                 <div id="status-pill" class="status-pill">
                     <div id="status-dot" class="status-dot offline"></div>
-                    <span id="status-text">Conectando à API...</span>
+                    <span id="status-text">Conectando...</span>
                 </div>
                 <div class="badge" id="version-text">API: --</div>
             </div>
@@ -510,7 +470,7 @@
                 <span class="tagline">— escreva sem medo</span>
             </div>
             <textarea id="post-text" rows="3"
-                      placeholder="Conte o que você vive aí dentro (sem citar nomes ou dados que te identifiquem diretamente)..."></textarea>
+                      placeholder="Resuma o que te incomoda no trabalho, sem citar seu nome ou dados diretos..."></textarea>
         </div>
 
         <div class="top-actions">
@@ -528,7 +488,7 @@
         </div>
         <div id="feed" class="feed"></div>
         <div id="feed-empty" class="empty-state" style="display:none;">
-            Nenhuma indignação registrada ainda. Seja a primeira voz anônima da pirâmide.
+            Ainda não há desabafos. Você pode ser a primeira voz da pirâmide.
         </div>
     </div>
 </div>
@@ -541,23 +501,71 @@
             <button id="modal-close" class="modal-close">fechar</button>
         </div>
         <div class="modal-sub">
-            Clique em uma parte da pirâmide para publicar seu protesto com a classe escolhida.
+            Clique em uma faixa da pirâmide para publicar seu protesto com essa classe.
         </div>
         <div class="pyramid-wrapper">
-            <div id="pyramid" class="pyramid">
-                <div class="pyr-layer topo" data-classe="topo">
-                    <span>TOPO</span>
-                </div>
-                <div class="pyr-layer meio" data-classe="meio">
-                    <span>MEIO</span>
-                </div>
-                <div class="pyr-layer base" data-classe="base">
-                    <span>BASE</span>
-                </div>
-            </div>
+            <svg id="pyramid-svg" class="pyramid-svg" viewBox="0 0 100 100">
+                <!-- Triângulo externo -->
+                <polygon points="50,2 98,98 2,98"
+                         stroke="#ffffffcc"
+                         stroke-width="2"
+                         fill="none" />
+
+                <!-- TOP -->
+                <polygon class="pyr-area" data-classe="topo"
+                         points="50,2 66,35 34,35"
+                         fill="url(#gradTopo)">
+                </polygon>
+                <text x="50" y="24" text-anchor="middle"
+                      fill="#ffffff" font-size="8" font-weight="600">
+                    TOPO
+                </text>
+
+                <!-- MEIO -->
+                <polygon class="pyr-area" data-classe="meio"
+                         points="34,35 66,35 80,66 20,66"
+                         fill="url(#gradMeio)">
+                </polygon>
+                <text x="50" y="52" text-anchor="middle"
+                      fill="#ffffff" font-size="8" font-weight="600">
+                    MEIO
+                </text>
+
+                <!-- BASE -->
+                <polygon class="pyr-area" data-classe="base"
+                         points="20,66 80,66 98,98 2,98"
+                         fill="url(#gradBase)">
+                </polygon>
+                <text x="50" y="84" text-anchor="middle"
+                      fill="#ffffff" font-size="8" font-weight="600">
+                    BASE
+                </text>
+
+                <!-- Linhas internas -->
+                <line x1="34" y1="35" x2="66" y2="35" stroke="#ffffffaa" stroke-width="1" />
+                <line x1="20" y1="66" x2="80" y2="66" stroke="#ffffffaa" stroke-width="1" />
+
+                <!-- Gradientes -->
+                <defs>
+                    <linearGradient id="gradTopo" x1="0" y1="-1" x2="0" y2="1">
+                        <stop offset="0%" stop-color="#fca5a5" />
+                        <stop offset="100%" stop-color="#ef4444" />
+                    </linearGradient>
+
+                    <linearGradient id="gradMeio" x1="0" y1="-1" x2="0" y2="1">
+                        <stop offset="0%" stop-color="#93c5fd" />
+                        <stop offset="100%" stop-color="#3b82f6" />
+                    </linearGradient>
+
+                    <linearGradient id="gradBase" x1="0" y1="-1" x2="0" y2="1">
+                        <stop offset="0%" stop-color="#86efac" />
+                        <stop offset="100%" stop-color="#22c55e" />
+                    </linearGradient>
+                </defs>
+            </svg>
         </div>
         <div class="modal-footer">
-            Sua identidade não é salva, apenas o texto e a classe da pirâmide.
+            Só o texto e a classe são salvos. Nada que te identifique.
         </div>
     </div>
 </div>
@@ -579,9 +587,10 @@
 
     const modalBackdrop = document.getElementById("class-modal-backdrop");
     const modalCloseBtn = document.getElementById("modal-close");
-    const pyramidEl = document.getElementById("pyramid");
 
-    // Texto que está aguardando seleção de classe
+    // callback atual da escolha de classe
+    let currentClassCallback = null;
+    // texto aguardando escolha de classe
     let stagedText = "";
 
     function setStatus(online, version) {
@@ -679,7 +688,6 @@
                 </div>
             `;
 
-            // Botão responder -> abre pirâmide só para a resposta
             const btnReply = postDiv.querySelector(".btn-reply");
             const replyTextarea = postDiv.querySelector(".reply-textarea");
             const replyError = postDiv.querySelector(".reply-error");
@@ -688,19 +696,17 @@
                 const text = replyTextarea.value.trim();
                 if (!text) {
                     replyError.style.display = "block";
-                    replyError.textContent = "Digite alguma coisa para responder.";
+                    replyError.textContent = "Digite algo para responder.";
                     return;
                 }
                 replyError.style.display = "none";
 
-                // abrimos modal e, ao escolher a classe, mandamos a reply
                 stagedText = text;
                 openClassModal(async (classe) => {
                     await enviarReply(post.id, stagedText, classe, replyError, replyTextarea, postDiv);
                 });
             });
 
-            // Botão ver respostas
             const btnToggleReplies = postDiv.querySelector(".btn-toggle-replies");
             const repliesDiv = postDiv.querySelector(".replies");
             btnToggleReplies.addEventListener("click", async () => {
@@ -764,9 +770,10 @@
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ texto, classe })
             });
+            const data = await resp.json().catch(() => ({}));
+
             if (!resp.ok) {
-                const errData = await resp.json().catch(() => ({}));
-                const msg = errData.error || "Erro ao enviar resposta.";
+                const msg = data.error || "Erro ao enviar resposta.";
                 replyError.style.display = "block";
                 replyError.textContent = msg;
             } else {
@@ -786,7 +793,7 @@
         const texto = postTextEl.value.trim();
         if (!texto) {
             errorGlobal.style.display = "block";
-            errorGlobal.textContent = "Escreva sua indignação antes de postar.";
+            errorGlobal.textContent = "Escreva algo antes de postar.";
             return;
         }
 
@@ -842,39 +849,14 @@
     // ---------- LÓGICA DO MODAL / PIRÂMIDE ----------
 
     function openClassModal(onSelect) {
-        // limpa seleção visual
-        pyramidEl.querySelectorAll(".pyr-layer").forEach(el => el.classList.remove("selected"));
+        currentClassCallback = onSelect;
+        document.querySelectorAll(".pyr-area").forEach(a => a.classList.remove("selected"));
         modalBackdrop.classList.add("show");
-
-        const clickHandler = async (e) => {
-            const layer = e.target.closest(".pyr-layer");
-            if (!layer) return;
-            const classe = layer.getAttribute("data-classe");
-            if (!classe) return;
-
-            pyramidEl.querySelectorAll(".pyr-layer").forEach(el => el.classList.remove("selected"));
-            layer.classList.add("selected");
-
-            // pequena animação antes de enviar
-            setTimeout(async () => {
-                closeClassModal();
-                if (typeof onSelect === "function") {
-                    await onSelect(classe);
-                }
-            }, 130);
-        };
-
-        // guardamos para poder remover depois
-        pyramidEl._clickHandler = clickHandler;
-        pyramidEl.addEventListener("click", clickHandler);
     }
 
     function closeClassModal() {
         modalBackdrop.classList.remove("show");
-        if (pyramidEl._clickHandler) {
-            pyramidEl.removeEventListener("click", pyramidEl._clickHandler);
-            pyramidEl._clickHandler = null;
-        }
+        currentClassCallback = null;
     }
 
     modalCloseBtn.addEventListener("click", closeClassModal);
@@ -883,6 +865,26 @@
         if (e.target === modalBackdrop) {
             closeClassModal();
         }
+    });
+
+    // click global nas áreas da pirâmide (SVG)
+    document.addEventListener("click", async (e) => {
+        if (!modalBackdrop.classList.contains("show")) return;
+        const area = e.target.closest(".pyr-area");
+        if (!area) return;
+        const classe = area.getAttribute("data-classe");
+        if (!classe || !currentClassCallback) return;
+
+        document.querySelectorAll(".pyr-area").forEach(a => a.classList.remove("selected"));
+        area.classList.add("selected");
+
+        const cb = currentClassCallback;
+        currentClassCallback = null;
+
+        setTimeout(async () => {
+            closeClassModal();
+            await cb(classe);
+        }, 130);
     });
 
     // inicializa
