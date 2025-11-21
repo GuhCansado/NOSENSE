@@ -1,76 +1,100 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <title>Rede de Indignações</title>
-    <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8" />
+    <title>Vozes da Pirâmide</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="style.css" />
 </head>
-
-<body>
+<body class="theme-dark">
 
 <div class="container">
 
-    <!-- HEADER -->
-    <div class="header">
-        <h1><span>Rede de Indignações</span></h1>
-        <p class="subtitle">Desabafe de forma anônima.</p>
+    <!-- ============================================= -->
+    <!-- HEADER / STATUS / TEMA                        -->
+    <!-- ============================================= -->
+    <header class="header">
+        <div>
+            <h1><span>Vozes da pirâmide</span></h1>
+            <p class="subtitle">
+                Desabafos anônimos sobre o dia a dia dentro da empresa.
+            </p>
+        </div>
 
-        <div class="status-bar">
+        <div class="header-right">
             <div class="status-pill">
                 <div id="status-dot" class="status-dot offline"></div>
-                <span id="status-text">Offline</span>
+                <span id="status-text">Verificando servidor...</span>
             </div>
 
-            <span class="badge">v1.0 — Clean Edition</span>
+            <button id="theme-toggle" class="icon-btn" title="Alternar tema">
+                🌙
+            </button>
         </div>
-    </div>
+    </header>
 
-    <!-- PUBLICAR -->
-    <div class="card">
-        <h2 class="section-title">Postar nova indignação</h2>
+    <!-- ============================================= -->
+    <!-- ASSUNTOS QUENTES                              -->
+    <!-- ============================================= -->
+    <section class="card topics-card">
+        <div class="topics-header">
+            <span class="topics-title">Assuntos mais quentes</span>
+            <span class="topics-hint">baseado nas hashtags dos últimos desabafos</span>
+        </div>
+        <div id="top-topics" class="topics-row">
+            <!-- preenchido via JS -->
+            <span class="topic-pill empty">Sem assuntos ainda. Use hashtags como #exausto, #chefia, #metas...</span>
+        </div>
+    </section>
 
+    <!-- ============================================= -->
+    <!-- CARD NOVO POST                                -->
+    <!-- ============================================= -->
+    <section class="card">
         <div class="input-wrapper">
-            <div class="inside-label">Escreva seu desabafo</div>
-            <textarea id="post-text" placeholder="Fale o que está preso na sua garganta..."></textarea>
+            <div class="inside-label">
+                <span class="brand">Protesto anônimo</span>
+                <span class="tagline">— escreva sem citar nomes reais</span>
+            </div>
+            <textarea id="post-text" rows="3"
+                      placeholder="Conte o que está acontecendo aí dentro. Você pode usar hashtags como #exausto #chefia #sobrecarregado..."></textarea>
         </div>
 
-        <button id="btn-escolher-classe" class="primary" style="margin-top:12px">
-            Escolher posição na pirâmide
-        </button>
+        <div class="post-toolbar">
+            <button id="btn-escolher-classe" class="secondary small-btn">
+                Escolher posição na pirâmide
+            </button>
+            <span id="post-error" class="error-msg"></span>
 
-        <button id="btn-postar" class="primary" style="margin-top:10px" disabled>
-            Postar
-        </button>
+            <div class="post-toolbar-right">
+                <button id="btn-postar" class="primary" disabled>
+                    Postar anonimamente
+                </button>
+            </div>
+        </div>
+    </section>
 
-        <div id="post-error" class="error-msg"></div>
-    </div>
+    <!-- ============================================= -->
+    <!-- FEED                                          -->
+    <!-- ============================================= -->
+    <section class="card">
+        <div class="feed-header-row">
+            <div class="feed-title">Feed de indignações</div>
+            <button id="btn-reload" class="secondary small-btn">
+                Atualizar feed
+            </button>
+        </div>
 
-    <!-- FEED -->
-    <div class="card">
-        <h2 class="section-title">Feed de indignações</h2>
-        <div id="feed" class="feed"></div>
-    </div>
+        <div id="feed" class="feed">
+            <!-- posts via JS -->
+        </div>
+    </section>
 
 </div>
 
-<!-- FOOTER BUTTON -->
-<button id="help-btn" class="help-button">?</button>
-
-<!-- MODAL AJUDA -->
-<div id="help-modal" class="modal-backdrop">
-    <div class="modal">
-        <div class="modal-header">
-            <div class="modal-title">Sobre</div>
-            <button id="help-close" class="modal-close secondary">fechar</button>
-        </div>
-
-        <div class="modal-sub">
-            Apenas um trabalhador indignado.
-        </div>
-    </div>
-</div>
-
-<!-- MODAL PIRÂMIDE -->
+<!-- ============================================= -->
+<!-- MODAL PIRÂMIDE                                -->
+<!-- ============================================= -->
 <div id="class-modal-backdrop" class="modal-backdrop">
     <div class="modal">
         <div class="modal-header">
@@ -79,37 +103,65 @@
         </div>
 
         <div class="modal-sub">
-            Clique no bloco que representa sua situação.
+            Clique em uma das faixas da pirâmide para continuar.
         </div>
 
         <div class="pyramid-wrapper">
-            <svg id="pyramid-svg" class="pyramid-svg" viewBox="0 0 100 120">
+            <!-- Pirâmide com 3 blocos que formam 1 triângulo -->
+            <svg id="pyramid-svg" class="pyramid-svg" viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg">
+                <!-- contorno geral -->
+                <polygon class="outline" points="50,5 5,115 95,115" />
 
-                <!-- CONTORNO -->
-                <polygon class="outline" points="50,5 5,115 95,115"/>
+                <!-- BASE: área entre y=70 e y=115 -->
+                <polygon data-classe="base" points="50,70 12,115 88,115" />
 
-                <!-- BASE -->
-                <polygon data-classe="base" points="15,95 85,95 95,115 5,115"/>
+                <!-- MEIO: área entre y=40 e y=70 (dentro do triângulo) -->
+                <polygon data-classe="meio" points="50,40 22,95 78,95" />
 
-                <!-- MEIO -->
-                <polygon data-classe="meio" points="22,60 78,60 85,95 15,95"/>
+                <!-- TOPO: área entre y=5 e y=40 -->
+                <polygon data-classe="topo" points="50,10 34,50 66,50" />
 
-                <!-- TOPO -->
-                <polygon data-classe="topo" points="35,25 65,25 78,60 22,60"/>
+                <!-- linhas internas -->
+                <line x1="23" y1="95" x2="77" y2="95" stroke="#e5e7eb" stroke-width="1.3" />
+                <line x1="34" y1="50" x2="66" y2="50" stroke="#e5e7eb" stroke-width="1.3" />
 
-                <!-- Linhas -->
-                <line x1="22" y1="60" x2="78" y2="60"/>
-                <line x1="15" y1="95" x2="85" y2="95"/>
-
-                <!-- Labels -->
-                <text x="50" y="48" text-anchor="middle">TOPO</text>
-                <text x="50" y="78" text-anchor="middle">MEIO</text>
-                <text x="50" y="108" text-anchor="middle">BASE</text>
-
+                <!-- labels -->
+                <text x="50" y="34" text-anchor="middle">TOPO</text>
+                <text x="50" y="73" text-anchor="middle">MEIO</text>
+                <text x="50" y="105" text-anchor="middle">BASE</text>
             </svg>
+        </div>
+
+        <div class="modal-footer">
+            Nada é salvo sobre você. Apenas o texto, a classe e as hashtags.
         </div>
     </div>
 </div>
+
+<!-- ============================================= -->
+<!-- MODAL DE AJUDA ( ? )                          -->
+<!-- ============================================= -->
+<div id="help-modal" class="modal-backdrop">
+    <div class="modal">
+        <div class="modal-header">
+            <div class="modal-title">Sobre este lugar</div>
+            <button id="help-close" class="modal-close secondary">fechar</button>
+        </div>
+        <div class="modal-sub">
+            Apenas um trabalhador indignado.
+        </div>
+        <p class="help-text">
+            Esse espaço é um experimento de desabafos anônimos sobre o trabalho.
+            Evite citar nomes, CNPJs ou qualquer coisa que identifique pessoas diretamente.
+            Use hashtags para marcar assuntos (#exausto, #chefia, #salário, #burnout...).
+        </p>
+    </div>
+</div>
+
+<!-- ============================================= -->
+<!-- BOTÃO FIXO "?"                                -->
+<!-- ============================================= -->
+<button id="help-btn" class="help-floating">?</button>
 
 <script src="script.js"></script>
 </body>
