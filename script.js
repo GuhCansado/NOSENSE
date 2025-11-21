@@ -127,61 +127,47 @@ const btnPostar = document.getElementById("btn-postar");
 let classeEscolhida = null;
 
 /* ação pendente: post ou reply */
-let acaoPendente = null; // { tipo: 'post', texto } ou { tipo: 'reply', texto, postId, textarea, postEl }
+let acaoPendente = null;
 
 function abrirModalClasse() {
-    if (!classModal) return;
     classModal.classList.add("show");
 }
 
 function fecharModalClasse() {
-    if (!classModal) return;
     classModal.classList.remove("show");
 }
 
-if (btnEscolher) {
-    btnEscolher.onclick = () => abrirModalClasse();
-}
+modalClose.onclick = () => fecharModalClasse();
 
-if (modalClose) {
-    modalClose.onclick = () => fecharModalClasse();
-}
+/* clicar fora fecha */
+classModal.addEventListener("click", (e) => {
+    if (e.target === classModal) fecharModalClasse();
+});
 
-if (classModal) {
-    classModal.addEventListener("click", (e) => {
-        if (e.target === classModal) {
-            fecharModalClasse();
+/* seleção na pirâmide */
+pyramidSvg.querySelectorAll("polygon[data-classe]").forEach(poly => {
+    poly.addEventListener("click", () => {
+        pyramidSvg.querySelectorAll("polygon[data-classe]").forEach(p => p.classList.remove("selected"));
+        poly.classList.add("selected");
+        classeEscolhida = poly.dataset.classe;
+
+        fecharModalClasse();
+
+        if (acaoPendente) {
+            if (acaoPendente.tipo === "post") {
+                enviarPost(acaoPendente.texto);
+            } else if (acaoPendente.tipo === "reply") {
+                enviarResposta(
+                    acaoPendente.postId,
+                    acaoPendente.texto,
+                    acaoPendente.textarea,
+                    acaoPendente.postEl
+                );
+            }
+            acaoPendente = null;
         }
     });
-}
-
-/* seleção na pirâmide com efeito de luz */
-if (pyramidSvg) {
-    pyramidSvg.querySelectorAll("polygon[data-classe]").forEach(poly => {
-        poly.addEventListener("click", () => {
-            pyramidSvg.querySelectorAll("polygon[data-classe]").forEach(p => p.classList.remove("selected"));
-            poly.classList.add("selected");
-            classeEscolhida = poly.dataset.classe;
-
-            fecharModalClasse();
-
-            // se existe ação pendente (post ou reply), executa agora
-            if (acaoPendente) {
-                if (acaoPendente.tipo === "post") {
-                    enviarPost(acaoPendente.texto);
-                } else if (acaoPendente.tipo === "reply") {
-                    enviarResposta(
-                        acaoPendente.postId,
-                        acaoPendente.texto,
-                        acaoPendente.textarea,
-                        acaoPendente.postEl
-                    );
-                }
-                acaoPendente = null;
-            }
-        });
-    });
-}
+});
 
 /* ===========================================
    POSTAR
@@ -192,18 +178,7 @@ const postError = document.getElementById("post-error");
 
 async function enviarPost(texto) {
     if (!API) return alert("API não carregada.");
-    if (!texto || !texto.trim()) {
-        postError.textContent = "Digite algo.";
-        return;
-    }
-    if (!classeEscolhida) {
-        postError.textContent = "Escolha a classe.";
-        acaoPendente = { tipo: "post", texto };
-        abrirModalClasse();
-        return;
-    }
 
-    postError.textContent = "";
     setButtonLoading(btnPostar, true, "Postando...");
 
     try {
@@ -229,26 +204,52 @@ async function enviarPost(texto) {
     }
 }
 
-if (btnPostar) {
-    btnPostar.addEventListener("click", (e) => {
-        e.preventDefault();
-        if (!postText) return;
-        const texto = postText.value.trim();
-        if (!texto) {
-            postError.textContent = "Digite algo.";
-            return;
-        }
+btnPostar.addEventListener("click", (e) => {
+    e.preventDefault();
+    const texto = postText.value.trim();
 
-        // se ainda não tem classe -> abrir modal e registrar ação pendente
-        if (!classeEscolhida) {
-            postError.textContent = "Escolha a classe.";
-            acaoPendente = { tipo: "post", texto };
-            abrirModalClasse();
-            return;
-        }
+    if (!texto) {
+        postError.textContent = "Digite algo.";
+        return;
+    }
 
-        enviarPost(texto);
-    });
+    if (!classeEscolhida) {
+        postError.textContent = "Escolha a classe.";
+        acaoPendente = { tipo: "post", texto };
+        abrirModalClasse();
+        return;
+    }
+
+    enviarPost(texto);
+});
+
+/* ===========================================
+   SISTEMA DE LIKES
+=========================================== */
+
+function getLikes() {
+    return JSON.parse(localStorage.getItem("likes_piramide") || "{}");
+}
+
+function saveLikes(data) {
+    localStorage.setItem("likes_piramide", JSON.stringify(data));
+}
+
+function toggleLike(postId, btn) {
+    let likes = getLikes();
+
+    if (!likes[postId]) likes[postId] = 0;
+
+    if (btn.classList.contains("active")) {
+        btn.classList.remove("active");
+        likes[postId] = Math.max(0, likes[postId] - 1);
+    } else {
+        btn.classList.add("active");
+        likes[postId] += 1;
+    }
+
+    saveLikes(likes);
+    btn.innerHTML = `♥ Curtir (${likes[postId]})`;
 }
 
 /* ===========================================
@@ -258,15 +259,13 @@ if (btnPostar) {
 const feedEl = document.getElementById("feed");
 
 async function carregarPosts() {
-    if (!API || !feedEl) return;
+    if (!API) return;
 
     feedEl.innerHTML = "Carregando...";
 
     try {
         const r = await fetch(`${API}/api/posts`);
         const posts = await r.json();
-
-        if (!Array.isArray(posts)) throw new Error();
 
         renderFeed(posts);
     } catch {
@@ -277,9 +276,13 @@ async function carregarPosts() {
 function renderFeed(posts) {
     feedEl.innerHTML = "";
 
+    let storedLikes = getLikes();
+
     posts.forEach(p => {
         const el = document.createElement("div");
         el.className = "post";
+
+        let likeCount = storedLikes[p.id] || 0;
 
         el.innerHTML = `
             <div class="post-header">
@@ -295,55 +298,53 @@ function renderFeed(posts) {
             <div class="post-text">${highlightTags(p.texto)}</div>
 
             <div class="post-actions">
-                <button class="like-btn" type="button">
-                    <span>♥</span> Curtir
+                <button class="like-btn ${likeCount > 0 ? "active" : ""}">
+                    ♥ Curtir (${likeCount})
                 </button>
-                <button class="report-btn" type="button">
+
+                <button class="report-btn">
                     🚩 Denunciar
                 </button>
-                <button class="ver-respostas" type="button">
-                    Ver respostas (${p.replies_count})
+
+                <button class="ver-respostas">
+                    Ver respostas (${p.replies_count || 0})
                 </button>
             </div>
 
             <div class="reply-box">
                 <textarea class="reply-textarea" placeholder="Responder..."></textarea>
-                <button class="primary-btn responder-btn" type="button">Enviar</button>
+                <button class="primary-btn responder-btn">Enviar</button>
                 <div class="replies"></div>
             </div>
         `;
 
-        // toggle respostas
+        /* LIKE */
+        const likeBtn = el.querySelector(".like-btn");
+        likeBtn.addEventListener("click", () => toggleLike(p.id, likeBtn));
+
+        /* DENÚNCIA */
+        el.querySelector(".report-btn").addEventListener("click", () => {
+            alert("Obrigado! Sua denúncia será analisada.");
+        });
+
+        /* RESPOSTAS */
         const btnToggle = el.querySelector(".ver-respostas");
         const box = el.querySelector(".reply-box");
 
         btnToggle.onclick = () => {
-            box.style.display = box.style.display === "block" ? "none" : "block";
-            if (box.style.display === "block") carregarRespostas(p.id, el);
+            const isOpen = box.style.display === "block";
+            box.style.display = isOpen ? "none" : "block";
+            if (!isOpen) carregarRespostas(p.id, el);
         };
 
-        // like (somente front)
-        const likeBtn = el.querySelector(".like-btn");
-        likeBtn.addEventListener("click", () => {
-            likeBtn.classList.toggle("active");
-        });
-
-        // denunciar (somente feedback visual)
-        const reportBtn = el.querySelector(".report-btn");
-        reportBtn.addEventListener("click", () => {
-            alert("Obrigado pelo aviso. Nossa equipe irá revisar esta denúncia.");
-        });
-
-        // enviar resposta
         const replyBtn = el.querySelector(".responder-btn");
         const replyTextarea = el.querySelector(".reply-textarea");
 
-        replyBtn.addEventListener("click", () => {
+        replyBtn.onclick = () => {
             const texto = replyTextarea.value.trim();
             if (!texto) return;
 
             if (!classeEscolhida) {
-                postError.textContent = "Escolha a classe para responder.";
                 acaoPendente = {
                     tipo: "reply",
                     texto,
@@ -356,14 +357,14 @@ function renderFeed(posts) {
             }
 
             enviarResposta(p.id, texto, replyTextarea, el);
-        });
+        };
 
         feedEl.appendChild(el);
     });
 }
 
 async function enviarResposta(idPost, texto, textareaEl, postEl) {
-    if (!API) return alert("API não carregada.");
+    if (!API) return;
 
     const btn = postEl.querySelector(".responder-btn");
     setButtonLoading(btn, true, "Enviando...");
@@ -408,6 +409,11 @@ async function carregarRespostas(id, postEl) {
             `;
             box.appendChild(d);
         });
+
+        // atualizar contador na UI
+        const btn = postEl.querySelector(".ver-respostas");
+        btn.textContent = `Ver respostas (${replies.length})`;
+
     } catch {
         postEl.querySelector(".replies").innerHTML = "Erro.";
     }
