@@ -5,19 +5,22 @@
     <title>Vozes da Pirâmide</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <!-- =============================== -->
-    <!--            ESTILOS             -->
-    <!-- =============================== -->
-
     <style>
         :root {
-            --base-color: #22c55e;
-            --meio-color: #3b82f6;
-            --topo-color: #ef4444;
-            --bg: #020617;
-            --card-bg: #020617;
+            /* Paleta enxuta */
+            --bg: #020817;
+            --bg-soft: #050b1f;
+            --card-bg: #050816;
+            --border-soft: #1f2937;
             --text: #e5e7eb;
             --muted: #9ca3af;
+
+            --accent-blue: #1d4ed8;   /* azul escuro */
+            --accent-purple: #7c3aed; /* roxo escuro */
+            --accent-soft: #4c1d95;   /* roxo bem escuro */
+
+            --success: #22c55e;
+            --danger: #f97316; /* só para texto de erro, bem discreto */
         }
 
         * { box-sizing: border-box; }
@@ -25,7 +28,7 @@
         body {
             margin: 0;
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-            background: radial-gradient(circle at top, #1e293b, #020617 45%);
+            background: radial-gradient(circle at top, #0b1120, var(--bg));
             color: var(--text);
             display: flex;
             justify-content: center;
@@ -45,10 +48,11 @@
 
         h1 span {
             display: inline-block;
-            background: linear-gradient(to right, var(--base-color), var(--meio-color), var(--topo-color));
+            background: linear-gradient(to right, var(--accent-blue), var(--accent-purple));
             -webkit-background-clip: text;
             color: transparent;
             font-weight: 800;
+            letter-spacing: 0.06em;
         }
 
         .subtitle {
@@ -58,18 +62,18 @@
         }
 
         .card {
-            background: rgba(15, 23, 42, 0.95);
-            border-radius: 20px;
+            background: radial-gradient(circle at top left, #020617, var(--card-bg));
+            border-radius: 18px;
             padding: 14px 16px 18px;
-            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.65);
-            border: 1px solid rgba(148, 163, 184, 0.18);
+            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.7);
+            border: 1px solid rgba(148, 163, 184, 0.15);
             margin-bottom: 16px;
-            backdrop-filter: blur(16px);
-            animation: cardIn 0.4s ease-out;
+            backdrop-filter: blur(18px);
+            animation: cardIn 0.35s ease-out;
         }
 
         @keyframes cardIn {
-            from { opacity: 0; transform: translateY(10px); }
+            from { opacity: 0; transform: translateY(8px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
@@ -88,7 +92,8 @@
             font-size: 0.8rem;
             padding: 6px 10px;
             border-radius: 999px;
-            background: rgba(15, 23, 42, 0.9);
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid rgba(31, 41, 55, 0.9);
         }
 
         .status-dot {
@@ -97,14 +102,14 @@
             border-radius: 999px;
         }
 
-        .status-dot.online { background: #22c55e; }
+        .status-dot.online { background: var(--success); }
         .status-dot.offline { background: #ef4444; }
 
         .badge {
             font-size: 0.75rem;
             padding: 4px 8px;
             border-radius: 999px;
-            border: 1px solid rgba(148, 163, 184, 0.4);
+            border: 1px solid rgba(148, 163, 184, 0.3);
             color: var(--muted);
         }
 
@@ -115,36 +120,35 @@
 
         textarea {
             width: 100%;
-            background: radial-gradient(circle at top left, rgba(30, 64, 175, 0.35), rgba(15, 23, 42, 0.96));
-            border-radius: 18px;
-            border: 1px solid rgba(148, 163, 184, 0.4);
+            background: radial-gradient(circle at top left, #020617, #020617);
+            border-radius: 14px;
+            border: 1px solid rgba(55, 65, 81, 0.9);
             padding: 12px 13px 32px;
             color: var(--text);
             font-size: 0.95rem;
             resize: vertical;
             min-height: 80px;
             max-height: 220px;
-            transition: border 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+            transition: border 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
         }
 
         textarea:focus {
             outline: none;
-            border-color: rgba(248, 250, 252, 0.9);
-            box-shadow: 0 0 0 1px rgba(248, 250, 252, 0.2);
+            border-color: var(--accent-purple);
+            box-shadow: 0 0 0 1px rgba(129, 140, 248, 0.45);
             transform: translateY(-1px);
         }
 
         textarea::placeholder {
             color: rgba(148, 163, 184, 0.9);
-            opacity: 0.9;
         }
 
         .inside-label {
             position: absolute;
-            top: 6px;
+            top: 5px;
             left: 12px;
             font-size: 0.75rem;
-            color: rgba(148, 163, 184, 0.85);
+            color: rgba(148, 163, 184, 0.9);
             pointer-events: none;
             display: flex;
             align-items: center;
@@ -153,11 +157,10 @@
 
         .inside-label span.brand {
             font-weight: 600;
-            opacity: 0.95;
         }
 
         .inside-label span.tagline {
-            opacity: 0.7;
+            opacity: 0.75;
         }
 
         button {
@@ -173,21 +176,21 @@
         }
 
         button.primary {
-            background: linear-gradient(to right, #22c55e, #3b82f6);
-            color: #0b1120;
-            box-shadow: 0 10px 30px rgba(37, 99, 235, 0.45);
-            transition: transform 0.15s ease-out, box-shadow 0.15s ease-out, filter 0.15s ease-out;
+            background: linear-gradient(to right, var(--accent-blue), var(--accent-purple));
+            color: #f9fafb;
+            box-shadow: 0 12px 30px rgba(15, 118, 230, 0.5);
+            transition: transform 0.14s ease-out, box-shadow 0.14s ease-out, filter 0.14s ease-out;
         }
 
         button.primary:hover:not(:disabled) {
             transform: translateY(-1px);
             filter: brightness(1.05);
-            box-shadow: 0 14px 38px rgba(37, 99, 235, 0.55);
+            box-shadow: 0 16px 40px rgba(55, 65, 194, 0.6);
         }
 
         button.primary:active:not(:disabled) {
             transform: translateY(0);
-            box-shadow: 0 6px 18px rgba(37, 99, 235, 0.45);
+            box-shadow: 0 8px 22px rgba(30, 64, 175, 0.5);
         }
 
         button.secondary {
@@ -213,10 +216,10 @@
         }
 
         .post {
-            border-radius: 16px;
+            border-radius: 14px;
             padding: 11px 11px;
-            border: 1px solid rgba(31, 41, 55, 0.9);
-            background: radial-gradient(circle at top left, rgba(51, 65, 85, 0.5), rgba(15, 23, 42, 0.95));
+            border: 1px solid var(--border-soft);
+            background: radial-gradient(circle at top left, #020617, var(--bg-soft));
             margin-bottom: 10px;
             animation: postIn 0.22s ease-out;
         }
@@ -278,7 +281,7 @@
         .reply-box {
             margin-top: 6px;
             padding-top: 6px;
-            border-top: 1px dashed rgba(148, 163, 184, 0.35);
+            border-top: 1px dashed rgba(55, 65, 81, 0.8);
         }
 
         .replies {
@@ -288,8 +291,8 @@
         .reply {
             margin-top: 4px;
             padding: 6px 8px;
-            border-radius: 10px;
-            background: rgba(15, 23, 42, 0.9);
+            border-radius: 9px;
+            background: rgba(15, 23, 42, 0.95);
             border: 1px solid rgba(31, 41, 55, 0.9);
             animation: replyIn 0.18s ease-out;
         }
@@ -330,14 +333,14 @@
         }
 
         /* ===============================
-           MODAL PIRÂMIDE
+           MODAL & SVG PIRÂMIDE
         =============================== */
 
         .modal-backdrop {
             position: fixed;
             inset: 0;
-            background: rgba(15, 23, 42, 0.80);
-            backdrop-filter: blur(14px);
+            background: rgba(2, 6, 23, 0.85);
+            backdrop-filter: blur(16px);
             display: none;
             align-items: center;
             justify-content: center;
@@ -356,14 +359,15 @@
         .modal {
             width: 100%;
             max-width: 420px;
-            background: radial-gradient(circle at top, rgba(30, 64, 175, 0.45), rgba(15, 23, 42, 0.98));
-            border-radius: 22px;
-            border: 1px solid rgba(148, 163, 184, 0.45);
-            box-shadow: 0 24px 70px rgba(0, 0, 0, 0.8);
+            background: radial-gradient(circle at top, #020617, #020617);
+            border-radius: 20px;
+            border: 1px solid rgba(148, 163, 184, 0.4);
+            box-shadow: 0 24px 70px rgba(0, 0, 0, 0.85);
             padding: 16px 18px 18px;
             transform: scale(0.96) translateY(8px);
             opacity: 0;
-            transition: transform 0.24s cubic-bezier(0.22, 0.61, 0.36, 1), opacity 0.24s ease-out;
+            transition: transform 0.24s cubic-bezier(0.22, 0.61, 0.36, 1),
+                        opacity 0.24s ease-out;
         }
 
         .modal-backdrop.show .modal {
@@ -397,75 +401,85 @@
             font-size: 0.8rem;
         }
 
-        /* ===============================
-           PIRÂMIDE 3D BONITA
-        =============================== */
-
         .pyramid-wrapper {
             display: flex;
             justify-content: center;
             margin: 10px 0 6px;
         }
 
-        .pyramid {
-            position: relative;
+        svg#pyramid-svg {
             width: 230px;
-            height: 180px;
+            max-width: 100%;
         }
 
-        .pyr-layer {
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-            clip-path: polygon(50% 0, 100% 100%, 0 100%);
-            cursor: pointer;
-            display: flex;
-            align-items: flex-end;
-            justify-content: center;
-            padding-bottom: 8px;
-            color: #0b1120;
-            font-weight: 700;
-            letter-spacing: 0.03em;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+        .pyr-segment {
             transition: transform 0.18s ease-out, filter 0.18s ease-out;
+            cursor: pointer;
         }
 
-        .pyr-layer span {
+        .pyr-segment polygon {
+            stroke: #9ca3af;
+            stroke-width: 1.4;
+            fill-opacity: 0.06;
+        }
+
+        .pyr-segment[data-classe="topo"] polygon {
+            fill: #7c3aed;
+        }
+
+        .pyr-segment[data-classe="meio"] polygon {
+            fill: #1d4ed8;
+        }
+
+        .pyr-segment[data-classe="base"] polygon {
+            fill: #4b5563;
+        }
+
+        .pyr-segment text {
+            fill: #e5e7eb;
+            font-size: 6px;
+            letter-spacing: 1.5px;
+        }
+
+        .pyr-segment:hover {
+            filter: brightness(1.2);
+        }
+
+        .pyr-segment:hover polygon {
+            fill-opacity: 0.20;
+        }
+
+        .pyr-segment.selected {
+            filter: brightness(1.3);
+        }
+
+        .pyr-segment.selected polygon {
+            fill-opacity: 0.30;
+            stroke-width: 1.8;
+        }
+
+        .modal-footer {
             font-size: 0.78rem;
-            text-transform: uppercase;
+            color: var(--muted);
+            text-align: center;
+            margin-top: 6px;
         }
 
-        .pyr-layer.topo {
-            top: 0;
-            width: 38%;
-            height: 55px;
-            background: linear-gradient(to bottom, #fecaca, #ef4444);
-        }
+        @media (max-width: 600px) {
+            .card {
+                border-radius: 16px;
+            }
 
-        .pyr-layer.meio {
-            top: 50px;
-            width: 70%;
-            height: 60px;
-            background: linear-gradient(to bottom, #bfdbfe, #3b82f6);
-        }
+            .status-bar {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 4px;
+            }
 
-        .pyr-layer.base {
-            top: 105px;
-            width: 100%;
-            height: 70px;
-            background: linear-gradient(to bottom, #bbf7d0, #22c55e);
+            .modal {
+                border-radius: 16px;
+            }
         }
-
-        .pyr-layer:hover {
-            transform: translateX(-50%) scale(1.03);
-            filter: brightness(1.09);
-        }
-
-        .pyr-layer.selected {
-            transform: translateX(-50%) scale(1.06);
-            filter: brightness(1.15);
-        }
-
     </style>
 </head>
 
@@ -474,10 +488,7 @@
 <body>
 <div class="container">
 
-    <!-- ================================================= -->
-    <!-- CARD PRINCIPAL PARA POSTAR -->
-    <!-- ================================================= -->
-
+    <!-- CARD PRINCIPAL -->
     <div class="card">
         <div class="status-bar">
             <div>
@@ -512,11 +523,7 @@
         </div>
     </div>
 
-
-    <!-- ================================================= -->
-    <!-- FEED DE INDIGNAÇÕES -->
-    <!-- ================================================= -->
-
+    <!-- FEED -->
     <div class="card">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
             <div style="font-weight:600; font-size:0.95rem;">Feed de indignações</div>
@@ -533,13 +540,9 @@
 
 
 
-<!-- ================================================= -->
-<!-- MODAL PARA ESCOLHER A CLASSE DA PIRÂMIDE -->
-<!-- ================================================= -->
-
+<!-- MODAL PIRÂMIDE (SVG) -->
 <div id="class-modal-backdrop" class="modal-backdrop">
     <div class="modal">
-
         <div class="modal-header">
             <div class="modal-title">Escolha sua posição na pirâmide</div>
             <button id="modal-close" class="modal-close">fechar</button>
@@ -550,28 +553,51 @@
         </div>
 
         <div class="pyramid-wrapper">
-            <div id="pyramid" class="pyramid">
-                <div class="pyr-layer topo" data-classe="topo"><span>TOPO</span></div>
-                <div class="pyr-layer meio" data-classe="meio"><span>MEIO</span></div>
-                <div class="pyr-layer base" data-classe="base"><span>BASE</span></div>
-            </div>
+            <!-- SVG baseado no desenho enviado (triângulo com 2 divisórias horizontais) -->
+            <svg id="pyramid-svg" viewBox="0 0 100 120">
+
+                <!-- Contorno principal e linhas internas -->
+                <polygon points="50,2 2,118 98,118"
+                         fill="none"
+                         stroke="#9ca3af"
+                         stroke-width="1.6" />
+                <line x1="30" y1="42" x2="70" y2="42"
+                      stroke="#9ca3af"
+                      stroke-width="1.4" />
+                <line x1="18" y1="78" x2="82" y2="78"
+                      stroke="#9ca3af"
+                      stroke-width="1.4" />
+
+                <!-- TOPO -->
+                <g class="pyr-segment" data-classe="topo">
+                    <polygon points="50,2 30,42 70,42" />
+                    <text x="50" y="30" text-anchor="middle">TOPO</text>
+                </g>
+
+                <!-- MEIO -->
+                <g class="pyr-segment" data-classe="meio">
+                    <polygon points="30,42 70,42 82,78 18,78" />
+                    <text x="50" y="63" text-anchor="middle">MEIO</text>
+                </g>
+
+                <!-- BASE -->
+                <g class="pyr-segment" data-classe="base">
+                    <polygon points="18,78 82,78 98,118 2,118" />
+                    <text x="50" y="100" text-anchor="middle">BASE</text>
+                </g>
+
+            </svg>
         </div>
 
         <div class="modal-footer">
             Nada é salvo sobre você. Apenas o texto e a classe.
         </div>
-
     </div>
 </div>
 
 
 
-<!-- ================================================= -->
-<!-- SCRIPT PRINCIPAL -->
-<!-- ================================================= -->
-
 <script>
-
     let API_BASE = null;
     let API_STATUS = "offline";
     let API_VERSION = "--";
@@ -588,21 +614,17 @@
 
     const modalBackdrop = document.getElementById("class-modal-backdrop");
     const modalCloseBtn = document.getElementById("modal-close");
-    const pyramidEl = document.getElementById("pyramid");
+    const pyramidSvg = document.getElementById("pyramid-svg");
 
     let stagedText = "";
 
-
-    /* ======================================================
-       STATUS DO SERVIDOR VIA GITHUB RAW
-    ====================================================== */
+    // ------------------ STATUS via GitHub RAW ------------------
 
     async function carregarConfig() {
         try {
             const resp = await fetch(
                 "https://raw.githubusercontent.com/GuhCansado/NOSENSE/main/server_status.json?cache=" + Date.now()
             );
-
             if (!resp.ok) throw new Error("Falha ao carregar server_status.json");
 
             const data = await resp.json();
@@ -622,15 +644,10 @@
         } catch (err) {
             console.error(err);
             errorGlobal.style.display = "block";
-            errorGlobal.textContent = "Erro ao ler o server_status.json do GitHub Pages.";
+            errorGlobal.textContent = "Erro ao ler o server_status.json do GitHub.";
             setStatus(false, "--");
         }
     }
-
-
-    /* ======================================================
-       ATUALIZAR STATUS VISUAL
-    ====================================================== */
 
     function setStatus(online, version) {
         API_STATUS = online ? "online" : "offline";
@@ -644,11 +661,7 @@
         btnPost.disabled = !online;
     }
 
-
-
-    /* ======================================================
-       CARREGAR FEED
-    ====================================================== */
+    // ------------------ FEED ------------------
 
     async function carregarFeed() {
         if (!API_BASE) return;
@@ -659,18 +672,12 @@
 
             const posts = await resp.json();
             renderFeed(posts);
-
         } catch (err) {
             console.error(err);
             errorGlobal.style.display = "block";
-            errorGlobal.textContent = "Erro ao carregar o feed.";
+            errorGlobal.textContent = "Erro ao carregar o feed. Verifique se o servidor está rodando.";
         }
     }
-
-
-    /* ======================================================
-       EXIBIR FEED
-    ====================================================== */
 
     function escapeHtml(text) {
         return text.replace(/[&<>"']/g, (c) => ({
@@ -682,9 +689,7 @@
         }[c]));
     }
 
-
     function renderFeed(posts) {
-
         feedEl.innerHTML = "";
 
         if (!posts || posts.length === 0) {
@@ -694,9 +699,7 @@
 
         feedEmptyEl.style.display = "none";
 
-
         for (const post of posts) {
-
             const postDiv = document.createElement("div");
             postDiv.className = "post";
             postDiv.dataset.postId = post.id;
@@ -712,7 +715,7 @@
                     <div class="post-meta">
                         <div class="alias">${post.alias || "Anônimo"}</div>
                         <div class="meta-line">
-                            <span>${post.classe_label}</span>
+                            <span>${post.classe_label || ""}</span>
                             <span>•</span>
                             <span>${new Date(post.created_at).toLocaleString("pt-BR")}</span>
                             <span>•</span>
@@ -721,15 +724,14 @@
                     </div>
                 </div>
 
-                <div class="post-text">${escapeHtml(post.texto)}</div>
+                <div class="post-text">${escapeHtml(post.texto || "")}</div>
 
                 <div class="reply-box">
                     <div style="font-size:0.78rem; color:var(--muted); margin-bottom:4px;">
                         Responder anonimamente
                     </div>
 
-                    <textarea class="reply-textarea" rows="2"
-                        placeholder="Escreva sua resposta..."></textarea>
+                    <textarea class="reply-textarea" rows="2" placeholder="Escreva sua resposta..."></textarea>
 
                     <div style="margin-top:6px; display:flex; gap:6px;">
                         <button class="small-btn primary btn-reply">Responder</button>
@@ -741,8 +743,6 @@
                 </div>
             `;
 
-
-            /* BOTÃO RESPONDER */
             const btnReply = postDiv.querySelector(".btn-reply");
             const replyTA = postDiv.querySelector(".reply-textarea");
             const replyError = postDiv.querySelector(".reply-error");
@@ -762,13 +762,10 @@
                 });
             });
 
-
-            /* VER RESPOSTAS */
             const btnToggle = postDiv.querySelector(".btn-toggle-replies");
             const repliesDiv = postDiv.querySelector(".replies");
 
             btnToggle.addEventListener("click", async () => {
-
                 if (repliesDiv.style.display === "none") {
                     await carregarReplies(postDiv, post.id);
                     repliesDiv.style.display = "block";
@@ -782,12 +779,6 @@
             feedEl.appendChild(postDiv);
         }
     }
-
-
-
-    /* ======================================================
-       CARREGAR RESPOSTAS
-    ====================================================== */
 
     async function carregarReplies(postDiv, postId) {
         const repliesDiv = postDiv.querySelector(".replies");
@@ -815,13 +806,13 @@
                             ${r.avatar?.emoji || "🙂"}
                         </div>
                         <div>
-                            <div class="reply-alias">${r.alias}</div>
+                            <div class="reply-alias">${r.alias || "Anônimo"}</div>
                             <div style="font-size:0.7rem; color:var(--muted);">
                                 ${new Date(r.created_at).toLocaleString("pt-BR")}
                             </div>
                         </div>
                     </div>
-                    <div class="reply-text">${escapeHtml(r.texto)}</div>
+                    <div class="reply-text">${escapeHtml(r.texto || "")}</div>
                 `;
 
                 repliesDiv.appendChild(replyEl);
@@ -832,17 +823,11 @@
         }
     }
 
-
-
-    /* ======================================================
-       ENVIAR RESPOSTA
-    ====================================================== */
-
     async function enviarReply(postId, texto, classe, replyError, replyTA, postDiv) {
         try {
             const resp = await fetch(API_BASE + "/api/posts/" + postId + "/replies", {
                 method: "POST",
-                headers: {"Content-Type": "application/json"},
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ texto, classe })
             });
 
@@ -864,11 +849,7 @@
         }
     }
 
-
-
-    /* ======================================================
-       ENVIAR POSTAGEM
-    ====================================================== */
+    // ------------------ POSTAGEM ------------------
 
     btnPost.addEventListener("click", () => {
         errorGlobal.style.display = "none";
@@ -893,14 +874,13 @@
         });
     });
 
-
     async function enviarPost(texto, classe) {
         btnPost.disabled = true;
 
         try {
             const resp = await fetch(API_BASE + "/api/posts", {
                 method: "POST",
-                headers: {"Content-Type": "application/json"},
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ texto, classe })
             });
 
@@ -922,42 +902,36 @@
         btnPost.disabled = false;
     }
 
-
-
-    /* ======================================================
-       MODAL DA PIRÂMIDE
-    ====================================================== */
+    // ------------------ MODAL + SVG PIRÂMIDE ------------------
 
     function openClassModal(onSelect) {
-
-        pyramidEl.querySelectorAll(".pyr-layer").forEach(el => el.classList.remove("selected"));
-
+        pyramidSvg.querySelectorAll(".pyr-segment").forEach(el => el.classList.remove("selected"));
         modalBackdrop.classList.add("show");
 
-        const handler = async (e) => {
-            const layer = e.target.closest(".pyr-layer");
-            if (!layer) return;
+        const handler = (e) => {
+            const seg = e.target.closest(".pyr-segment");
+            if (!seg) return;
 
-            pyramidEl.querySelectorAll(".pyr-layer").forEach(el => el.classList.remove("selected"));
-            layer.classList.add("selected");
+            pyramidSvg.querySelectorAll(".pyr-segment").forEach(el => el.classList.remove("selected"));
+            seg.classList.add("selected");
 
-            setTimeout(async () => {
+            const classe = seg.getAttribute("data-classe");
+
+            setTimeout(() => {
                 closeClassModal();
-                if (onSelect) onSelect(layer.dataset.classe);
-            }, 120);
+                if (onSelect) onSelect(classe);
+            }, 130);
         };
 
-        pyramidEl._handler = handler;
-        pyramidEl.addEventListener("click", handler);
+        pyramidSvg._handler = handler;
+        pyramidSvg.addEventListener("click", handler);
     }
-
 
     function closeClassModal() {
         modalBackdrop.classList.remove("show");
-
-        if (pyramidEl._handler) {
-            pyramidEl.removeEventListener("click", pyramidEl._handler);
-            pyramidEl._handler = null;
+        if (pyramidSvg._handler) {
+            pyramidSvg.removeEventListener("click", pyramidSvg._handler);
+            pyramidSvg._handler = null;
         }
     }
 
@@ -967,13 +941,8 @@
         if (e.target === modalBackdrop) closeClassModal();
     });
 
-
-    /* ======================================================
-       INICIAR SISTEMA
-    ====================================================== */
-
+    // ------------------ START ------------------
     carregarConfig();
-
 </script>
 
 </body>
