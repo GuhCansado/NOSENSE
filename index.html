@@ -1,72 +1,76 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8" />
-    <title>Vozes da Pirâmide</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="stylesheet" href="style.css" />
+    <meta charset="UTF-8">
+    <title>Rede de Indignações</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
+
 <div class="container">
 
-    <!-- ============================================= -->
-    <!-- CARD PRINCIPAL PARA POSTAR                    -->
-    <!-- ============================================= -->
-    <div class="card">
+    <!-- HEADER -->
+    <div class="header">
+        <h1><span>Rede de Indignações</span></h1>
+        <p class="subtitle">Desabafe de forma anônima.</p>
+
         <div class="status-bar">
-            <div>
-                <h1><span>Vozes da pirâmide</span></h1>
-                <div class="subtitle">
-                    Desabafe de forma anônima sobre abusos da empresa.
-                </div>
+            <div class="status-pill">
+                <div id="status-dot" class="status-dot offline"></div>
+                <span id="status-text">Offline</span>
             </div>
 
-            <div>
-                <div id="status-pill" class="status-pill">
-                    <div id="status-dot" class="status-dot offline"></div>
-                    <span id="status-text">Conectando à API...</span>
-                </div>
-                <div class="badge" id="version-text">API: --</div>
-            </div>
-        </div>
-
-        <div id="error-global" class="error-msg" style="display:none;"></div>
-
-        <div class="input-wrapper">
-            <div class="inside-label">
-                <span class="brand">Protesto Anônimo</span>
-                <span class="tagline">— escreva sem medo</span>
-            </div>
-            <textarea id="post-text" rows="3"
-                      placeholder="Conte o que você vive aí dentro (sem citar nomes ou dados que te identifiquem)..."></textarea>
-        </div>
-
-        <div class="top-actions">
-            <button id="btn-post" class="primary">Postar anonimamente</button>
+            <span class="badge">v1.0 — Clean Edition</span>
         </div>
     </div>
 
-    <!-- ============================================= -->
-    <!-- FEED DE INDIGNAÇÕES                           -->
-    <!-- ============================================= -->
+    <!-- PUBLICAR -->
     <div class="card">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-            <div style="font-weight:600; font-size:0.95rem;">Feed de indignações</div>
-            <div class="badge" style="font-size:0.78rem;">Atualiza ao carregar ou postar</div>
+        <h2 class="section-title">Postar nova indignação</h2>
+
+        <div class="input-wrapper">
+            <div class="inside-label">Escreva seu desabafo</div>
+            <textarea id="post-text" placeholder="Fale o que está preso na sua garganta..."></textarea>
         </div>
 
+        <button id="btn-escolher-classe" class="primary" style="margin-top:12px">
+            Escolher posição na pirâmide
+        </button>
+
+        <button id="btn-postar" class="primary" style="margin-top:10px" disabled>
+            Postar
+        </button>
+
+        <div id="post-error" class="error-msg"></div>
+    </div>
+
+    <!-- FEED -->
+    <div class="card">
+        <h2 class="section-title">Feed de indignações</h2>
         <div id="feed" class="feed"></div>
-        <div id="feed-empty" class="empty-state" style="display:none;">
-            Nenhuma indignação registrada ainda. Seja a primeira voz da pirâmide.
-        </div>
     </div>
 
 </div>
 
-<!-- ============================================= -->
-<!-- MODAL: ESCOLHER CLASSE DA PIRÂMIDE           -->
-<!-- ============================================= -->
+<!-- FOOTER BUTTON -->
+<button id="help-btn" class="help-button">?</button>
+
+<!-- MODAL AJUDA -->
+<div id="help-modal" class="modal-backdrop">
+    <div class="modal">
+        <div class="modal-header">
+            <div class="modal-title">Sobre</div>
+            <button id="help-close" class="modal-close secondary">fechar</button>
+        </div>
+
+        <div class="modal-sub">
+            Apenas um trabalhador indignado.
+        </div>
+    </div>
+</div>
+
+<!-- MODAL PIRÂMIDE -->
 <div id="class-modal-backdrop" class="modal-backdrop">
     <div class="modal">
         <div class="modal-header">
@@ -75,83 +79,37 @@
         </div>
 
         <div class="modal-sub">
-            Clique em uma parte da pirâmide para continuar.
+            Clique no bloco que representa sua situação.
         </div>
 
         <div class="pyramid-wrapper">
-            <!-- SVG baseado na imagem enviada -->
-            <svg id="pyramid-svg" class="pyramid-svg" viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg">
-                <!-- contorno geral -->
+            <svg id="pyramid-svg" class="pyramid-svg" viewBox="0 0 100 120">
+
+                <!-- CONTORNO -->
                 <polygon class="outline" points="50,5 5,115 95,115"/>
 
-                <!-- base -->
-                <polygon data-classe="base" points="50,80 10,115 90,115"/>
+                <!-- BASE -->
+                <polygon data-classe="base" points="15,95 85,95 95,115 5,115"/>
 
-                <!-- meio -->
-                <polygon data-classe="meio" points="50,50 18,95 82,95"/>
+                <!-- MEIO -->
+                <polygon data-classe="meio" points="22,60 78,60 85,95 15,95"/>
 
-                <!-- topo -->
-                <polygon data-classe="topo" points="50,20 32,60 68,60"/>
+                <!-- TOPO -->
+                <polygon data-classe="topo" points="35,25 65,25 78,60 22,60"/>
 
-                <!-- linhas horizontais (só contorno) -->
-                <line x1="20" y1="95" x2="80" y2="95" stroke="#e5e7eb" stroke-width="1.3"/>
-                <line x1="32" y1="60" x2="68" y2="60" stroke="#e5e7eb" stroke-width="1.3"/>
+                <!-- Linhas -->
+                <line x1="22" y1="60" x2="78" y2="60"/>
+                <line x1="15" y1="95" x2="85" y2="95"/>
 
-                <!-- labels -->
-                <text x="50" y="40" text-anchor="middle">TOPO</text>
-                <text x="50" y="75" text-anchor="middle">MEIO</text>
-                <text x="50" y="105" text-anchor="middle">BASE</text>
+                <!-- Labels -->
+                <text x="50" y="48" text-anchor="middle">TOPO</text>
+                <text x="50" y="78" text-anchor="middle">MEIO</text>
+                <text x="50" y="108" text-anchor="middle">BASE</text>
+
             </svg>
         </div>
-
-        <div class="modal-footer">
-            Nada é salvo sobre você. Apenas o texto e a classe.
-        </div>
     </div>
 </div>
-
-<!-- ============================================= -->
-<!-- MODAL AJUDA (BOTÃO ? NO RODAPÉ)              -->
-<!-- ============================================= -->
-<div id="help-modal-backdrop" class="modal-backdrop">
-    <div class="modal">
-        <div class="modal-header">
-            <div class="modal-title">Sobre este lugar</div>
-            <button id="help-modal-close" class="modal-close secondary">fechar</button>
-        </div>
-        <div class="modal-sub">
-            Um espaço seguro para desabafar anonimamente.
-        </div>
-        <div style="font-size:0.9rem; line-height:1.5;">
-<p>
-    Sou colaborador de um dos setores da Algar e, assim como muitos colegas, não estou satisfeito com a forma como temos sido tratados. 
-    Em diversas situações, sinto-me injustiçado, mesmo reconhecendo que muitas das dificuldades enfrentadas não são culpa direta de nossos 
-    supervisores, que muitas vezes não têm meios para nos auxiliar.
-</p>
-
-<p>
-    Diante desse cenário, percebi a necessidade de um método de protesto pacífico — uma forma organizada e respeitosa de buscarmos respostas 
-    e sermos ouvidos enquanto classe trabalhadora, a base que sustenta essa empresa. Acredito que, por meio deste espaço, possamos expressar 
-    nossas preocupações sem medo de julgamentos ou de represálias, e também esclarecer dúvidas de maneira aberta e transparente.
-</p>
-
-<p>
-    É uma iniciativa simples, mas importante. Peço que compartilhem suas experiências e também escutem aqueles que passam por dificuldades 
-    semelhantes. Precisamos demonstrar que nossa indignação é legítima e que nossa voz merece ser ouvida.
-</p>
-
-<p>
-    Convido você a divulgar este link a outros colegas da Algar que possam se identificar com essa causa.
-</p>
-
-        </div>
-    </div>
-</div>
-
-<!-- Botão flutuante de ajuda -->
-<button id="help-button" class="help-button" aria-label="Ajuda">
-    ?
-</button>
 
 <script src="script.js"></script>
 </body>
