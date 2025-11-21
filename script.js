@@ -1,440 +1,400 @@
-// script.js
-// Front-end Vozes da Pirâmide (versão split em arquivo)
+// ===============================
+//  CONFIG E ELEMENTOS BÁSICOS
+// ===============================
 
-document.addEventListener("DOMContentLoaded", () => {
-    // =========================
-    // CONSTANTES
-    // =========================
-    const STATUS_JSON_URL =
-        "https://raw.githubusercontent.com/GuhCansado/NOSENSE/main/server_status.json";
+let API_BASE = null;
+let API_STATUS = "offline";
+let API_VERSION = "--";
 
-    // =========================
-    // ELEMENTOS DOM
-    // =========================
-    const statusDot = document.getElementById("status-dot");
-    const statusText = document.getElementById("status-text");
-    const versionText = document.getElementById("version-text");
-    const errorGlobal = document.getElementById("error-global");
+const statusDot = document.getElementById("status-dot");
+const statusText = document.getElementById("status-text");
+const versionText = document.getElementById("version-text");
+const errorGlobal = document.getElementById("error-global");
 
-    const postTextEl = document.getElementById("post-text");
-    const btnPost = document.getElementById("btn-post");
-    const feedEl = document.getElementById("feed");
-    const feedEmptyEl = document.getElementById("feed-empty");
+const postTextEl = document.getElementById("post-text");
+const btnPost = document.getElementById("btn-post");
+const feedEl = document.getElementById("feed");
+const feedEmptyEl = document.getElementById("feed-empty");
 
-    const modalBackdrop = document.getElementById("class-modal-backdrop");
-    const modalCloseBtn = document.getElementById("modal-close");
+// modal classe/pirâmide
+const classModalBackdrop = document.getElementById("class-modal-backdrop");
+const pyramidSvg = document.getElementById("pyramid-svg");
+const modalCloseBtn = document.getElementById("modal-close");
 
-    // Pirâmide pode ser SVG (#pyramid-svg) ou DIV (.pyramid) – suportamos os dois
-    const pyramidSvg = document.getElementById("pyramid-svg");
-    const pyramidDiv = document.getElementById("pyramid");
+// modal ajuda
+const helpModalBackdrop = document.getElementById("help-modal-backdrop");
+const helpModalClose = document.getElementById("help-modal-close");
+const helpButton = document.getElementById("help-button");
 
-    // Estado
-    let API_BASE = null;
-    let API_STATUS = "offline";
-    let API_VERSION = "--";
+let stagedText = "";
 
-    let stagedText = "";
-    let modalOnSelect = null;
+// ===============================
+//  CARREGAR CONFIG (GitHub RAW)
+// ===============================
 
-    // =========================
-    // FUNÇÕES DE STATUS
-    // =========================
+async function carregarConfig() {
+    try {
+        const resp = await fetch(
+            "https://raw.githubusercontent.com/GuhCansado/NOSENSE/main/server_status.json?cache=" + Date.now()
+        );
 
-    function setStatus(online, version) {
-        API_STATUS = online ? "online" : "offline";
+        if (!resp.ok) throw new Error("Falha ao carregar server_status.json");
 
-        statusDot.classList.remove("online", "offline");
-        statusDot.classList.add(online ? "online" : "offline");
+        const data = await resp.json();
 
-        statusText.textContent = online ? "Servidor Online" : "Servidor Offline";
-        versionText.textContent = "API: " + (version || "--");
+        API_BASE = data.url_api_base;
+        API_VERSION = data.version_api || "--";
 
-        btnPost.disabled = !online;
-    }
+        const online = data.status_servidor === "Online";
+        setStatus(online, API_VERSION);
 
-    async function carregarConfig() {
-        try {
-            const resp = await fetch(
-                STATUS_JSON_URL + "?cache=" + Date.now(),
-                { cache: "no-store" }
-            );
-
-            if (!resp.ok) {
-                throw new Error("Falha ao carregar server_status.json");
-            }
-
-            const data = await resp.json();
-
-            API_BASE = data.url_api_base;
-            API_VERSION = data.version_api || data.version_api || data.version_api === "" ? data.version_api : data.version_api;
-            // fallback simples se a chave vier como version_api ou version_api (server antigo)
-            if (!API_VERSION && data.version_api) API_VERSION = data.version_api;
-            if (!API_VERSION && data.version) API_VERSION = data.version;
-
-            const online = data.status_servidor === "Online";
-            setStatus(online, API_VERSION);
-
-            if (online) {
-                await carregarFeed();
-            } else {
-                feedEmptyEl.style.display = "block";
-            }
-        } catch (err) {
-            console.error(err);
-            errorGlobal.style.display = "block";
-            errorGlobal.textContent =
-                "Erro ao ler o server_status.json do GitHub. Verifique se o servidor foi iniciado.";
-            setStatus(false, "--");
-        }
-    }
-
-    // =========================
-    // FEED / POSTS
-    // =========================
-
-    async function carregarFeed() {
-        if (!API_BASE) return;
-        try {
-            const resp = await fetch(API_BASE + "/api/posts", {
-                method: "GET",
-                headers: { "Content-Type": "application/json" }
-            });
-            if (!resp.ok) throw new Error("Erro ao buscar posts");
-            const posts = await resp.json();
-            renderFeed(posts);
-        } catch (err) {
-            console.error(err);
-            errorGlobal.style.display = "block";
-            errorGlobal.textContent = "Erro ao carregar o feed. Verifique se o túnel ainda está ativo.";
-        }
-    }
-
-    function escapeHtml(text) {
-        if (!text) return "";
-        const map = {
-            "&": "&amp;",
-            "<": "&lt;",
-            ">": "&gt;",
-            '"': "&quot;",
-            "'": "&#039;"
-        };
-        return text.replace(/[&<>"']/g, m => map[m]);
-    }
-
-    function renderFeed(posts) {
-        feedEl.innerHTML = "";
-
-        if (!posts || posts.length === 0) {
+        if (online) {
+            await carregarFeed();
+        } else {
             feedEmptyEl.style.display = "block";
-            return;
         }
+    } catch (err) {
+        console.error(err);
+        errorGlobal.style.display = "block";
+        errorGlobal.textContent = "Erro ao ler o server_status.json do GitHub.";
+        setStatus(false, "--");
+    }
+}
 
-        feedEmptyEl.style.display = "none";
+// ===============================
+//  STATUS VISUAL
+// ===============================
 
-        for (const post of posts) {
-            const postDiv = document.createElement("div");
-            postDiv.className = "post";
-            postDiv.dataset.postId = post.id;
+function setStatus(online, version) {
+    API_STATUS = online ? "online" : "offline";
 
-            const avatarBg = (post.avatar && post.avatar.bg_color) || "#4b5563";
-            const emoji = (post.avatar && post.avatar.emoji) || "🙂";
+    statusDot.classList.remove("online", "offline");
+    statusDot.classList.add(online ? "online" : "offline");
 
-            const created = post.created_at
-                ? new Date(post.created_at).toLocaleString("pt-BR")
-                : "";
+    statusText.textContent = online ? "Servidor Online" : "Servidor Offline";
+    versionText.textContent = "API: " + (version || "--");
 
-            postDiv.innerHTML = `
-                <div class="post-header">
-                    <div class="avatar" style="background:${avatarBg};">
-                        ${emoji}
-                    </div>
-                    <div class="post-meta">
-                        <div class="alias">${post.alias || "Anônimo"}</div>
-                        <div class="meta-line">
-                            <span>${post.classe_label || ""}</span>
-                            <span>•</span>
-                            <span>${created}</span>
-                            <span>•</span>
-                            <span>${post.replies_count || 0} respostas</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="post-text">${escapeHtml(post.texto || "")}</div>
-                <div class="reply-box">
-                    <div style="font-size:0.78rem; color:var(--text-muted); margin-bottom:4px;">
-                        Responder anonimamente
-                    </div>
-                    <textarea class="reply-textarea" rows="2" placeholder="Escreva sua resposta..."></textarea>
-                    <div style="margin-top:6px; display:flex; gap:6px; flex-wrap:wrap;">
-                        <button class="small-btn primary btn-reply">Responder</button>
-                        <button class="small-btn secondary btn-toggle-replies">Ver respostas</button>
-                    </div>
-                    <div class="error-msg reply-error" style="display:none;"></div>
-                    <div class="replies" style="display:none;"></div>
-                </div>
-            `;
+    btnPost.disabled = !online;
+}
 
-            // Botão responder
-            const btnReply = postDiv.querySelector(".btn-reply");
-            const replyTextarea = postDiv.querySelector(".reply-textarea");
-            const replyError = postDiv.querySelector(".reply-error");
+// ===============================
+//  FEED
+// ===============================
 
-            btnReply.addEventListener("click", () => {
-                const text = replyTextarea.value.trim();
-                if (!text) {
-                    replyError.style.display = "block";
-                    replyError.textContent = "Digite alguma coisa para responder.";
-                    return;
-                }
-                replyError.style.display = "none";
-                stagedText = text;
+async function carregarFeed() {
+    if (!API_BASE) return;
 
-                openClassModal(async (classe) => {
-                    await enviarReply(
-                        post.id,
-                        stagedText,
-                        classe,
-                        replyError,
-                        replyTextarea,
-                        postDiv
-                    );
-                });
-            });
+    try {
+        const resp = await fetch(API_BASE + "/api/posts");
+        if (!resp.ok) throw new Error("Erro ao buscar posts");
 
-            // Botão ver respostas
-            const btnToggleReplies = postDiv.querySelector(".btn-toggle-replies");
-            const repliesDiv = postDiv.querySelector(".replies");
+        const posts = await resp.json();
+        renderFeed(posts);
+    } catch (err) {
+        console.error(err);
+        errorGlobal.style.display = "block";
+        errorGlobal.textContent = "Erro ao carregar o feed.";
+    }
+}
 
-            btnToggleReplies.addEventListener("click", async () => {
-                if (repliesDiv.style.display === "none") {
-                    await carregarReplies(postDiv, post.id);
-                    repliesDiv.style.display = "block";
-                    btnToggleReplies.textContent = "Esconder respostas";
-                } else {
-                    repliesDiv.style.display = "none";
-                    btnToggleReplies.textContent = "Ver respostas";
-                }
-            });
+function escapeHtml(text) {
+    return text.replace(/[&<>"']/g, (c) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+    }[c]));
+}
 
-            feedEl.appendChild(postDiv);
-        }
+function renderFeed(posts) {
+    feedEl.innerHTML = "";
+
+    if (!posts || posts.length === 0) {
+        feedEmptyEl.style.display = "block";
+        return;
     }
 
-    async function carregarReplies(postDiv, postId) {
+    feedEmptyEl.style.display = "none";
+
+    posts.forEach((post) => {
+        const postDiv = document.createElement("div");
+        postDiv.className = "post";
+        postDiv.dataset.postId = post.id;
+
+        const avatarBg = (post.avatar && post.avatar.bg_color) || "#4b5563";
+        const avatarEmoji = (post.avatar && post.avatar.emoji) || "🙂";
+
+        const dataStr = new Date(post.created_at).toLocaleString("pt-BR");
+
+        postDiv.innerHTML = `
+            <div class="post-header">
+                <div class="avatar" style="background:${avatarBg};">
+                    <span class="avatar-emoji">${avatarEmoji}</span>
+                </div>
+
+                <div class="post-meta">
+                    <div class="alias">${post.alias || "Anônimo"}</div>
+                    <div class="meta-line">
+                        <span>${post.classe_label}</span>
+                        <span>•</span>
+                        <span>${dataStr}</span>
+                        <span>•</span>
+                        <span>${post.replies_count || 0} respostas</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="post-text">${escapeHtml(post.texto)}</div>
+
+            <div class="post-footer">
+                <button class="small-btn secondary btn-toggle-replies">Ver respostas</button>
+            </div>
+
+            <div class="reply-box">
+                <div class="reply-label">Responder anonimamente</div>
+                <textarea class="reply-textarea" rows="2" placeholder="Escreva sua resposta..."></textarea>
+                <div class="reply-actions">
+                    <button class="small-btn primary btn-reply">Responder</button>
+                </div>
+                <div class="error-msg reply-error" style="display:none;"></div>
+                <div class="replies"></div>
+            </div>
+        `;
+
+        const btnToggle = postDiv.querySelector(".btn-toggle-replies");
+        const replyBox = postDiv.querySelector(".reply-box");
         const repliesDiv = postDiv.querySelector(".replies");
-        repliesDiv.innerHTML = "";
+        const btnReply = postDiv.querySelector(".btn-reply");
+        const replyTA = postDiv.querySelector(".reply-textarea");
+        const replyError = postDiv.querySelector(".reply-error");
 
-        try {
-            const resp = await fetch(
-                API_BASE + "/api/posts/" + encodeURIComponent(postId) + "/replies",
-                { method: "GET" }
-            );
-            if (!resp.ok) throw new Error("Erro ao buscar replies");
-            const replies = await resp.json();
+        // Abrir/fechar replies + caixa de resposta
+        btnToggle.addEventListener("click", async () => {
+            const isHidden = replyBox.style.display === "none" || replyBox.style.display === "";
+            if (isHidden) {
+                replyBox.style.display = "block";
+                btnToggle.textContent = "Esconder respostas";
+                await carregarReplies(postDiv, post.id);
+            } else {
+                replyBox.style.display = "none";
+                btnToggle.textContent = "Ver respostas";
+            }
+        });
 
-            if (!replies || replies.length === 0) {
-                repliesDiv.innerHTML =
-                    `<div class="empty-state" style="padding:4px 0;">Nenhuma resposta ainda.</div>`;
+        // Enviar resposta
+        btnReply.addEventListener("click", () => {
+            const text = replyTA.value.trim();
+            if (!text) {
+                replyError.style.display = "block";
+                replyError.textContent = "Digite algo.";
                 return;
             }
+            replyError.style.display = "none";
 
-            for (const r of replies) {
-                const avatarBg = (r.avatar && r.avatar.bg_color) || "#4b5563";
-                const emoji = (r.avatar && r.avatar.emoji) || "🙂";
-                const created = r.created_at
-                    ? new Date(r.created_at).toLocaleString("pt-BR")
-                    : "";
+            stagedText = text;
+            openClassModal(async (classe) => {
+                await enviarReply(post.id, stagedText, classe, replyError, replyTA, postDiv);
+            });
+        });
 
-                const replyEl = document.createElement("div");
-                replyEl.className = "reply";
-                replyEl.innerHTML = `
-                    <div class="reply-header">
-                        <div class="avatar" style="width:26px;height:26px;font-size:0.95rem;background:${avatarBg};">
-                            ${emoji}
-                        </div>
-                        <div>
-                            <div class="reply-alias">${r.alias || "Anônimo"}</div>
-                            <div style="font-size:0.7rem; color:var(--text-muted);">
-                                ${r.classe_label || ""} • ${created}
-                            </div>
+        feedEl.appendChild(postDiv);
+    });
+}
+
+// ===============================
+//  REPLIES
+// ===============================
+
+async function carregarReplies(postDiv, postId) {
+    const repliesDiv = postDiv.querySelector(".replies");
+    repliesDiv.innerHTML = "";
+
+    try {
+        const resp = await fetch(API_BASE + "/api/posts/" + postId + "/replies");
+        const replies = await resp.json();
+
+        if (!replies || replies.length === 0) {
+            repliesDiv.innerHTML =
+                `<div class="empty-state" style="padding:4px 0;">Nenhuma resposta ainda.</div>`;
+            return;
+        }
+
+        replies.forEach((r) => {
+            const avatarBg = (r.avatar && r.avatar.bg_color) || "#4b5563";
+            const avatarEmoji = (r.avatar && r.avatar.emoji) || "🙂";
+
+            const replyEl = document.createElement("div");
+            replyEl.className = "reply";
+
+            replyEl.innerHTML = `
+                <div class="reply-header">
+                    <div class="avatar" style="width:32px;height:32px;background:${avatarBg};">
+                        <span class="avatar-emoji" style="font-size:1.5rem;">${avatarEmoji}</span>
+                    </div>
+                    <div>
+                        <div class="reply-alias">${r.alias}</div>
+                        <div style="font-size:0.7rem; color:var(--text-muted);">
+                            ${new Date(r.created_at).toLocaleString("pt-BR")}
                         </div>
                     </div>
-                    <div class="reply-text">${escapeHtml(r.texto || "")}</div>
-                `;
-                repliesDiv.appendChild(replyEl);
-            }
-        } catch (err) {
-            repliesDiv.innerHTML =
-                `<div class="error-msg">Erro ao carregar respostas.</div>`;
-        }
+                </div>
+                <div class="reply-text">${escapeHtml(r.texto)}</div>
+            `;
+
+            repliesDiv.appendChild(replyEl);
+        });
+    } catch (err) {
+        repliesDiv.innerHTML = `<div class="error-msg">Erro ao carregar respostas.</div>`;
     }
+}
 
-    async function enviarReply(
-        postId,
-        texto,
-        classe,
-        replyError,
-        replyTextarea,
-        postDiv
-    ) {
-        try {
-            const resp = await fetch(
-                API_BASE + "/api/posts/" + encodeURIComponent(postId) + "/replies",
-                {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ texto, classe })
-                }
-            );
+async function enviarReply(postId, texto, classe, replyError, replyTA, postDiv) {
+    try {
+        const resp = await fetch(API_BASE + "/api/posts/" + postId + "/replies", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({ texto, classe })
+        });
 
-            const data = await resp.json().catch(() => ({}));
+        const data = await resp.json();
 
-            if (!resp.ok) {
-                replyError.style.display = "block";
-                replyError.textContent =
-                    data.error || "Erro ao enviar resposta.";
-            } else {
-                replyTextarea.value = "";
-                await carregarReplies(postDiv, postId);
-                await carregarFeed();
-            }
-        } catch (err) {
+        if (!resp.ok) {
             replyError.style.display = "block";
-            replyError.textContent = "Erro de conexão ao enviar resposta.";
+            replyError.textContent = data.error || "Erro ao responder.";
+            return;
         }
+
+        replyTA.value = "";
+        await carregarReplies(postDiv, postId);
+        await carregarFeed();
+    } catch (err) {
+        replyError.style.display = "block";
+        replyError.textContent = "Erro ao conectar com o servidor.";
+    }
+}
+
+// ===============================
+//  NOVO POST
+// ===============================
+
+btnPost.addEventListener("click", () => {
+    errorGlobal.style.display = "none";
+
+    const texto = postTextEl.value.trim();
+
+    if (!texto) {
+        errorGlobal.style.display = "block";
+        errorGlobal.textContent = "Escreva algo.";
+        return;
     }
 
-    // =========================
-    // NOVO POST
-    // =========================
+    if (!API_BASE || API_STATUS !== "online") {
+        errorGlobal.style.display = "block";
+        errorGlobal.textContent = "Servidor Offline.";
+        return;
+    }
 
-    btnPost.addEventListener("click", () => {
-        errorGlobal.style.display = "none";
-
-        const texto = postTextEl.value.trim();
-        if (!texto) {
-            errorGlobal.style.display = "block";
-            errorGlobal.textContent = "Escreva sua indignação antes de postar.";
-            return;
-        }
-
-        if (!API_BASE || API_STATUS !== "online") {
-            errorGlobal.style.display = "block";
-            errorGlobal.textContent =
-                "Servidor Offline. Inicie o servidor antes de postar.";
-            return;
-        }
-
-        stagedText = texto;
-        openClassModal(async (classe) => {
-            await enviarPost(stagedText, classe);
-        });
+    stagedText = texto;
+    openClassModal(async (classe) => {
+        await enviarPost(stagedText, classe);
     });
+});
 
-    async function enviarPost(texto, classe) {
-        btnPost.disabled = true;
+async function enviarPost(texto, classe) {
+    btnPost.disabled = true;
 
-        try {
-            const resp = await fetch(API_BASE + "/api/posts", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ texto, classe })
-            });
+    try {
+        const resp = await fetch(API_BASE + "/api/posts", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({ texto, classe })
+        });
 
-            const data = await resp.json().catch(() => ({}));
+        const data = await resp.json();
 
-            if (!resp.ok) {
-                errorGlobal.style.display = "block";
-                errorGlobal.textContent =
-                    data.error || "Erro ao criar postagem.";
-            } else {
-                postTextEl.value = "";
-                await carregarFeed();
-            }
-        } catch (err) {
-            console.error(err);
+        if (!resp.ok) {
             errorGlobal.style.display = "block";
-            errorGlobal.textContent = "Erro de conexão ao enviar postagem.";
-        } finally {
-            btnPost.disabled = false;
+            errorGlobal.textContent = data.error || "Erro ao criar postagem.";
+        } else {
+            postTextEl.value = "";
+            await carregarFeed();
         }
+    } catch (err) {
+        errorGlobal.style.display = "block";
+        errorGlobal.textContent = "Erro ao conectar.";
     }
 
-    // =========================
-    // MODAL / PIRÂMIDE
-    // =========================
+    btnPost.disabled = false;
+}
 
-    function openClassModal(onSelect) {
-        modalOnSelect = onSelect;
-        modalBackdrop.classList.add("show");
+// ===============================
+//  MODAL DA PIRÂMIDE (CLASSE)
+// ===============================
 
-        clearPyramidSelection();
+function openClassModal(onSelect) {
+    // limpa seleção
+    const layers = pyramidSvg.querySelectorAll("polygon[data-classe]");
+    layers.forEach((el) => el.classList.remove("selected"));
 
-        // listener de clique nos layers
-        const layerNodes = getPyramidLayers();
-        layerNodes.forEach(layer => {
-            layer.addEventListener("click", handlePyramidClick);
-        });
-    }
+    classModalBackdrop.classList.add("show");
 
-    function closeClassModal() {
-        modalBackdrop.classList.remove("show");
-
-        const layerNodes = getPyramidLayers();
-        layerNodes.forEach(layer => {
-            layer.removeEventListener("click", handlePyramidClick);
-        });
-
-        clearPyramidSelection();
-        modalOnSelect = null;
-    }
-
-    function getPyramidLayers() {
-        // Se existir SVG, usamos ele; se não, usamos divs .pyr-layer
-        if (pyramidSvg) {
-            return pyramidSvg.querySelectorAll("[data-classe]");
-        }
-        if (pyramidDiv) {
-            return pyramidDiv.querySelectorAll("[data-classe]");
-        }
-        return [];
-    }
-
-    function clearPyramidSelection() {
-        const layers = getPyramidLayers();
-        layers.forEach(layer => layer.classList.remove("selected"));
-    }
-
-    function handlePyramidClick(e) {
-        const target = e.target.closest("[data-classe]");
+    const handler = async (e) => {
+        const target = e.target.closest("polygon[data-classe]");
         if (!target) return;
 
-        const classe = target.getAttribute("data-classe");
-        if (!classe) return;
-
-        // animação visual
-        clearPyramidSelection();
+        layers.forEach((el) => el.classList.remove("selected"));
         target.classList.add("selected");
+
+        const classe = target.getAttribute("data-classe");
 
         setTimeout(() => {
             closeClassModal();
-            if (typeof modalOnSelect === "function") {
-                modalOnSelect(classe);
-            }
+            if (onSelect) onSelect(classe);
         }, 140);
+    };
+
+    pyramidSvg._handler = handler;
+    pyramidSvg.addEventListener("click", handler);
+}
+
+function closeClassModal() {
+    classModalBackdrop.classList.remove("show");
+
+    if (pyramidSvg._handler) {
+        pyramidSvg.removeEventListener("click", pyramidSvg._handler);
+        pyramidSvg._handler = null;
     }
+}
 
-    modalCloseBtn.addEventListener("click", closeClassModal);
+modalCloseBtn.addEventListener("click", closeClassModal);
 
-    modalBackdrop.addEventListener("click", (e) => {
-        if (e.target === modalBackdrop) {
-            closeClassModal();
-        }
-    });
-
-    // =========================
-    // START
-    // =========================
-
-    carregarConfig();
+classModalBackdrop.addEventListener("click", (e) => {
+    if (e.target === classModalBackdrop) {
+        closeClassModal();
+    }
 });
+
+// ===============================
+//  MODAL DE AJUDA (BOTÃO ?)
+// ===============================
+
+helpButton.addEventListener("click", () => {
+    helpModalBackdrop.classList.add("show");
+});
+
+helpModalClose.addEventListener("click", () => {
+    helpModalBackdrop.classList.remove("show");
+});
+
+helpModalBackdrop.addEventListener("click", (e) => {
+    if (e.target === helpModalBackdrop) {
+        helpModalBackdrop.classList.remove("show");
+    }
+});
+
+// ===============================
+//  INICIAR
+// ===============================
+
+carregarConfig();

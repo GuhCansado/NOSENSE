@@ -4,14 +4,15 @@
     <meta charset="UTF-8" />
     <title>Vozes da Pirâmide</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-
     <link rel="stylesheet" href="style.css" />
 </head>
 
 <body>
 <div class="container">
 
-    <!-- CARD PRINCIPAL -->
+    <!-- ============================================= -->
+    <!-- CARD PRINCIPAL PARA POSTAR                    -->
+    <!-- ============================================= -->
     <div class="card">
         <div class="status-bar">
             <div>
@@ -38,7 +39,7 @@
                 <span class="tagline">— escreva sem medo</span>
             </div>
             <textarea id="post-text" rows="3"
-                placeholder="Conte o que você vive aí dentro (sem citar nomes ou dados que te identifiquem)..."></textarea>
+                      placeholder="Conte o que você vive aí dentro (sem citar nomes ou dados que te identifiquem)..."></textarea>
         </div>
 
         <div class="top-actions">
@@ -46,7 +47,9 @@
         </div>
     </div>
 
-    <!-- FEED -->
+    <!-- ============================================= -->
+    <!-- FEED DE INDIGNAÇÕES                           -->
+    <!-- ============================================= -->
     <div class="card">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
             <div style="font-weight:600; font-size:0.95rem;">Feed de indignações</div>
@@ -61,12 +64,14 @@
 
 </div>
 
-<!-- MODAL PIRÂMIDE (SVG) -->
+<!-- ============================================= -->
+<!-- MODAL: ESCOLHER CLASSE DA PIRÂMIDE           -->
+<!-- ============================================= -->
 <div id="class-modal-backdrop" class="modal-backdrop">
     <div class="modal">
         <div class="modal-header">
             <div class="modal-title">Escolha sua posição na pirâmide</div>
-            <button id="modal-close" class="modal-close">fechar</button>
+            <button id="modal-close" class="modal-close secondary">fechar</button>
         </div>
 
         <div class="modal-sub">
@@ -74,37 +79,28 @@
         </div>
 
         <div class="pyramid-wrapper">
+            <!-- SVG baseado na imagem enviada -->
+            <svg id="pyramid-svg" class="pyramid-svg" viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg">
+                <!-- contorno geral -->
+                <polygon class="outline" points="50,5 5,115 95,115"/>
 
-            <svg id="pyramid-svg" viewBox="0 0 100 120">
+                <!-- base -->
+                <polygon data-classe="base" points="50,80 10,115 90,115"/>
 
-                <!-- Contorno principal -->
-                <polygon points="50,2 2,118 98,118"
-                         fill="none" stroke="#9ca3af" stroke-width="1.6" />
+                <!-- meio -->
+                <polygon data-classe="meio" points="50,50 18,95 82,95"/>
 
-                <!-- Linhas internas -->
-                <line x1="30" y1="42" x2="70" y2="42"
-                      stroke="#9ca3af" stroke-width="1.4" />
-                <line x1="18" y1="78" x2="82" y2="78"
-                      stroke="#9ca3af" stroke-width="1.4" />
+                <!-- topo -->
+                <polygon data-classe="topo" points="50,20 32,60 68,60"/>
 
-                <!-- TOPO -->
-                <g class="pyr-segment" data-classe="topo">
-                    <polygon points="50,2 30,42 70,42" />
-                    <text x="50" y="30" text-anchor="middle">TOPO</text>
-                </g>
+                <!-- linhas horizontais (só contorno) -->
+                <line x1="20" y1="95" x2="80" y2="95" stroke="#e5e7eb" stroke-width="1.3"/>
+                <line x1="32" y1="60" x2="68" y2="60" stroke="#e5e7eb" stroke-width="1.3"/>
 
-                <!-- MEIO -->
-                <g class="pyr-segment" data-classe="meio">
-                    <polygon points="30,42 70,42 82,78 18,78" />
-                    <text x="50" y="63" text-anchor="middle">MEIO</text>
-                </g>
-
-                <!-- BASE -->
-                <g class="pyr-segment" data-classe="base">
-                    <polygon points="18,78 82,78 98,118 2,118" />
-                    <text x="50" y="100" text-anchor="middle">BASE</text>
-                </g>
-
+                <!-- labels -->
+                <text x="50" y="40" text-anchor="middle">TOPO</text>
+                <text x="50" y="75" text-anchor="middle">MEIO</text>
+                <text x="50" y="105" text-anchor="middle">BASE</text>
             </svg>
         </div>
 
@@ -113,6 +109,29 @@
         </div>
     </div>
 </div>
+
+<!-- ============================================= -->
+<!-- MODAL AJUDA (BOTÃO ? NO RODAPÉ)              -->
+<!-- ============================================= -->
+<div id="help-modal-backdrop" class="modal-backdrop">
+    <div class="modal">
+        <div class="modal-header">
+            <div class="modal-title">Sobre este lugar</div>
+            <button id="help-modal-close" class="modal-close secondary">fechar</button>
+        </div>
+        <div class="modal-sub">
+            Um espaço seguro para desabafar anonimamente.
+        </div>
+        <div style="font-size:0.9rem; line-height:1.5;">
+            APENAS UM TRABALHADOR INDIGNADO
+        </div>
+    </div>
+</div>
+
+<!-- Botão flutuante de ajuda -->
+<button id="help-button" class="help-button" aria-label="Ajuda">
+    ?
+</button>
 
 <script src="script.js"></script>
 </body>
