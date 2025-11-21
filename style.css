@@ -477,6 +477,19 @@ button:disabled {
    PIRÂMIDE SVG
    ========================= */
 
+/* CORREÇÃO: impedir que textos/linhas capturem o clique */
+.pyramid-svg text,
+.pyramid-svg .outline,
+.pyramid-svg .separator {
+    pointer-events: none;
+}
+
+/* Apenas os polígonos devem capturar clique */
+.pyramid-svg polygon[data-classe] {
+    pointer-events: all;
+}
+
+
 .pyramid-wrapper {
     display: flex;
     justify-content: center;
