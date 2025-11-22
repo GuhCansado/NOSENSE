@@ -212,7 +212,7 @@ function setHoveredMesh(mesh) {
 function initPyramid3D() {
   if (!pyramidCanvas || !window.THREE) return;
 
-  // Cena básica
+  // === Cena ===
   pyramidScene = new THREE.Scene();
   pyramidScene.background = new THREE.Color(0x020617);
 
@@ -220,12 +220,12 @@ function initPyramid3D() {
   const w = rect.width || 400;
   const h = rect.height || 260;
 
-  // Câmera um pouco mais distante e alta para dar sensação de pirâmide pontuda
+  // === Câmera (corrigida e centralizada) ===
   pyramidCamera = new THREE.PerspectiveCamera(40, w / h, 0.1, 100);
-  pyramidCamera.position.set(0, 1.7, 6);
-  pyramidCamera.lookAt(0, 0.9, 0);
+  pyramidCamera.position.set(0, 2.2, 6.5); 
+  pyramidCamera.lookAt(0, 1.2, 0);
 
-  // Renderer
+  // === Renderer ===
   pyramidRenderer = new THREE.WebGLRenderer({
     canvas: pyramidCanvas,
     antialias: true,
@@ -234,184 +234,105 @@ function initPyramid3D() {
   pyramidRenderer.setPixelRatio(window.devicePixelRatio || 1);
   pyramidRenderer.setSize(w, h, false);
 
-  // Luzes
-  const ambient = new THREE.AmbientLight(0xffffff, 0.4);
+  // === Luzes ===
+  const ambient = new THREE.AmbientLight(0xffffff, 0.45);
   pyramidScene.add(ambient);
 
   const dir = new THREE.DirectionalLight(0xffffff, 1.0);
-  dir.position.set(4, 6, 4);
+  dir.position.set(3, 5, 4);
   pyramidScene.add(dir);
 
-  const point = new THREE.PointLight(0x7c7bff, 1.3, 12);
-  point.position.set(-3, 3, 4);
+  const point = new THREE.PointLight(0x7c7bff, 1.6, 12);
+  point.position.set(-2.2, 3.2, 3.5);
   pyramidScene.add(point);
 
-  // Grupo principal
+  // === Grupo da pirâmide ===
   pyramidGroup = new THREE.Group();
+  pyramidGroup.position.set(0, 1.2, 0); // CENTRALIZAÇÃO FIXA
   pyramidScene.add(pyramidGroup);
 
-  // Materiais semi-transparentes (estilo vidro)
+  // === Materiais ===
   const baseMat = new THREE.MeshStandardMaterial({
     color: 0x22c55e,
-    metalness: 0.4,
-    roughness: 0.25,
-    transparent: true,
-    opacity: 0.85,
-    emissive: 0x102915,
-    emissiveIntensity: 0.35
+    metalness: 0.45,
+    roughness: 0.3,
+    emissive: 0x16351f,
+    emissiveIntensity: 0.3
   });
   const middleMat = new THREE.MeshStandardMaterial({
     color: 0x3b82f6,
-    metalness: 0.45,
-    roughness: 0.25,
-    transparent: true,
-    opacity: 0.85,
-    emissive: 0x0b2145,
-    emissiveIntensity: 0.35
+    metalness: 0.48,
+    roughness: 0.3,
+    emissive: 0x102b4f,
+    emissiveIntensity: 0.3
   });
   const topMat = new THREE.MeshStandardMaterial({
     color: 0xef4444,
-    metalness: 0.5,
-    roughness: 0.23,
-    transparent: true,
-    opacity: 0.9,
-    emissive: 0x3b1010,
-    emissiveIntensity: 0.4
+    metalness: 0.52,
+    roughness: 0.28,
+    emissive: 0x3b1111,
+    emissiveIntensity: 0.3
   });
 
-  // Helper para criar fatia + contorno
+  // === Criação dos segmentos ===
   function createSegment(widthTop, widthBottom, height, mat, classe, y) {
-    // Frustum de pirâmide (cilindro com topo menor)
-    const geo = new THREE.CylinderGeometry(
-      widthTop,
-      widthBottom,
-      height,
-      4,
-      1,
-      false
-    );
-
+    const geo = new THREE.CylinderGeometry(widthTop, widthBottom, height, 4, 1, false);
     const mesh = new THREE.Mesh(geo, mat);
     mesh.rotation.y = Math.PI / 4;
     mesh.position.y = y;
     mesh.userData.classe = classe;
-
-    // Contorno (shader só nas bordas)
-    const edges = new THREE.EdgesGeometry(geo);
-    const line = new THREE.LineSegments(
-      edges,
-      new THREE.LineBasicMaterial({
-        color: 0xffffff,
-        transparent: true,
-        opacity: 0.85
-      })
-    );
-    mesh.add(line);
-
     pyramidGroup.add(mesh);
     return mesh;
   }
 
-  // Deixar mais pontuda: mais alta e afinando mais rápido
-  const sliceHeight = 1.1;
-  const base = createSegment(1.8, 2.7, sliceHeight, baseMat, "base", -0.7);
-  const meio = createSegment(1.2, 1.8, sliceHeight * 0.95, middleMat, "meio", 0.4);
-  const topo = createSegment(0.4, 1.2, sliceHeight * 0.9, topMat, "topo", 1.3);
+  // Altura de cada fatia
+  const sliceHeight = 0.85;
 
-  // Inclinação e posição
+  // Base – Meio – Topo
+  createSegment(1.6, 2.6, sliceHeight, baseMat, "base", -sliceHeight * 1.1);
+  createSegment(1.0, 1.6, sliceHeight, middleMat, "meio", 0);
+  createSegment(0.45, 1.0, sliceHeight, topMat, "topo", sliceHeight * 1.1);
+
+  // Rotação inicial
   pyramidGroup.rotation.x = THREE.MathUtils.degToRad(18);
   pyramidGroup.rotation.y = targetRotY;
-  pyramidGroup.position.y = 0.2;
 
-  // ================================
-  // TEXTOS "BASE / MEIO / TOPO" DENTRO
-  // ================================
-
-  function createLabelSprite(text, color) {
-    const canvas = document.createElement("canvas");
-    canvas.width = 256;
-    canvas.height = 128;
-    const ctx = canvas.getContext("2d");
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.font = "bold 42px system-ui";
-    ctx.fillStyle = "rgba(0,0,0,0)";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillStyle = color;
-    ctx.shadowColor = color;
-    ctx.shadowBlur = 18;
-    ctx.fillText(text, canvas.width / 2, canvas.height / 2);
-
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.needsUpdate = true;
-
-    const material = new THREE.SpriteMaterial({
-      map: texture,
-      transparent: true
-    });
-
-    const sprite = new THREE.Sprite(material);
-    sprite.scale.set(1.4, 0.7, 1);
-    return sprite;
-  }
-
-  const labelBase = createLabelSprite("BASE", "#bbf7d0");
-  labelBase.position.set(0, -0.3, 0.15);
-  pyramidGroup.add(labelBase);
-
-  const labelMeio = createLabelSprite("MEIO", "#bfdbfe");
-  labelMeio.position.set(0, 0.55, 0.2);
-  pyramidGroup.add(labelMeio);
-
-  const labelTopo = createLabelSprite("TOPO", "#fecaca");
-  labelTopo.position.set(0, 1.45, 0.25);
-  pyramidGroup.add(labelTopo);
-
-  // ================================
-  // INTERAÇÃO
-  // ================================
+  // === Raycaster ===
   pyramidRaycaster = new THREE.Raycaster();
   pyramidMouse = new THREE.Vector2();
 
+  // === Mouse move ===
   function handlePointerMove(e) {
     const r = pyramidCanvas.getBoundingClientRect();
     pyramidMouse.x = ((e.clientX - r.left) / r.width) * 2 - 1;
     pyramidMouse.y = -((e.clientY - r.top) / r.height) * 2 + 1;
 
     const normalizedX = (e.clientX - r.left) / r.width - 0.5;
-    targetRotY = -0.35 + normalizedX * 0.4;
+    targetRotY = -0.35 + normalizedX * 0.35;
 
     pyramidRaycaster.setFromCamera(pyramidMouse, pyramidCamera);
-    const intersects = pyramidRaycaster.intersectObjects(
-      pyramidGroup.children,
-      true
-    );
+    const intersects = pyramidRaycaster.intersectObjects(pyramidGroup.children);
 
-    // pegar só os meshes principais (que têm userData.classe)
-    const hit = intersects.find(obj => obj.object.userData?.classe);
-    if (hit) {
-      setHoveredMesh(hit.object);
+    if (intersects.length > 0) {
+      setHoveredMesh(intersects[0].object);
     } else {
       setHoveredMesh(null);
     }
   }
 
-  function handleClick() {
+  // === Clique ===
+  function handleClick(e) {
+    const r = pyramidCanvas.getBoundingClientRect();
+    pyramidMouse.x = ((e.clientX - r.left) / r.width) * 2 - 1;
+    pyramidMouse.y = -((e.clientY - r.top) / r.height) * 2 + 1;
+
     pyramidRaycaster.setFromCamera(pyramidMouse, pyramidCamera);
-    const intersects = pyramidRaycaster.intersectObjects(
-      pyramidGroup.children,
-      true
-    );
-    const hit = intersects.find(obj => obj.object.userData?.classe);
-    if (hit) {
-      const mesh = hit.object;
+    const intersects = pyramidRaycaster.intersectObjects(pyramidGroup.children);
+
+    if (intersects.length > 0) {
+      const mesh = intersects[0].object;
       const classe = mesh.userData.classe;
-      if (classe) {
-        selecionarClasse(classe, mesh);
-      }
+      if (classe) selecionarClasse(classe, mesh);
     }
   }
 
@@ -419,19 +340,19 @@ function initPyramid3D() {
   pyramidCanvas.addEventListener("click", handleClick);
   window.addEventListener("resize", resizePyramid);
 
-  // ================================
-  // LOOP DE ANIMAÇÃO
-  // ================================
+  // === Loop ===
   function animate() {
     requestAnimationFrame(animate);
+
     currentRotY += (targetRotY - currentRotY) * 0.08;
-    if (pyramidGroup) {
-      pyramidGroup.rotation.y = currentRotY;
-    }
+    pyramidGroup.rotation.y = currentRotY;
+
     pyramidRenderer.render(pyramidScene, pyramidCamera);
   }
+
   animate();
 }
+
 
 
 /* ===========================================
