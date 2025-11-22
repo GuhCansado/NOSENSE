@@ -120,7 +120,7 @@ async function atualizarStatus() {
   }
 }
 
-setInterval(() => API && atualizarStatus(), 5000);
+setInterval(() => API && atualizarStatus(), 50000000000);
 
 /* ===========================================
    PIRÂMIDE 3D (Three.js)
