@@ -215,7 +215,7 @@ function initPyramid3D() {
   const w = rect.width || 400;
   const h = rect.height || 260;
 
-  pyramidCamera = new THREE.PerspectiveCamera(32, w / h, 0.1, 100);
+  pyramidCamera = new THREE.PerspectiveCamera(36, w / h, 0.1, 100);
   pyramidCamera.position.set(0, 1.1, 5.1);
   pyramidCamera.lookAt(0, 0.55, 0);
 
@@ -281,9 +281,10 @@ function initPyramid3D() {
   const middle = createSegment(1.2, 1.7, sliceHeight, middleMat, "meio", 0);
   const top = createSegment(0.6, 1.2, sliceHeight, topMat, "topo", sliceHeight);
 
-  pyramidGroup.rotation.x = THREE.MathUtils.degToRad(18);
+  pyramidGroup.rotation.x = THREE.MathUtils.degToRad(12);
+
   pyramidGroup.rotation.y = targetRotY;
-  pyramidGroup.position.y = 0.1;
+  pyramidGroup.position.y = 0.55;
 
   pyramidRaycaster = new THREE.Raycaster();
   pyramidMouse = new THREE.Vector2();
