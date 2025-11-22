@@ -11,9 +11,6 @@ async function carregarConfigAPI() {
     );
     const js = await r.json();
     API = js.url_api_base;
-
-    console.log("API carregada:", API);
-
     atualizarStatus();
     carregarPosts();
   } catch (e) {
@@ -64,7 +61,6 @@ function setButtonLoading(btn, isLoading, label = "Carregando...") {
   }
 }
 
-// fingerprint simples por dispositivo (pra votos/denúncia)
 function getFingerprint() {
   let fp = localStorage.getItem("vp_fingerprint");
   if (!fp) {
@@ -125,133 +121,200 @@ setInterval(() => API && atualizarStatus(), 5000);
 =========================================== */
 
 let classeEscolhida = null;
-let acaoPendente = null; 
-// { tipo: 'post', texto } ou { tipo: 'reply', texto, postId, textarea, postEl }
+let acaoPendente = null;
 
 const classModal = document.getElementById("class-modal-backdrop");
 const modalClose = document.getElementById("modal-close");
 const pyramidCanvas = document.getElementById("pyramid-canvas");
 
-function abrirModalClasse() {
-  if (classModal) classModal.classList.add("show");
+let pyramidInitialized = false;
+let pyramidScene, pyramidCamera, pyramidRenderer, pyramidGroup;
+let pyramidRaycaster, pyramidMouse;
+let hoveredMesh = null;
+let selectedMesh = null;
+let targetRotY = -0.4;
+let currentRotY = -0.4;
+
+function openClassModal() {
+  if (!classModal) return;
+  classModal.classList.add("show");
+  setTimeout(() => {
+    if (!pyramidInitialized) {
+      initPyramid3D();
+      pyramidInitialized = true;
+    } else {
+      resizePyramid();
+    }
+  }, 150);
 }
 
-function fecharModalClasse() {
-  if (classModal) classModal.classList.remove("show");
+function closeClassModal() {
+  if (!classModal) return;
+  classModal.classList.remove("show");
 }
 
 if (modalClose) {
-  modalClose.addEventListener("click", fecharModalClasse);
+  modalClose.addEventListener("click", closeClassModal);
 }
 
 if (classModal) {
   classModal.addEventListener("click", (e) => {
-    if (e.target === classModal) fecharModalClasse();
+    if (e.target === classModal) closeClassModal();
   });
 }
 
-function initPyramid3D() {
- if (pyramidCanvas.dataset.initialized) return;
-  pyramidCanvas.dataset.initialized = "true";
+function resizePyramid() {
+  if (!pyramidRenderer || !pyramidCamera || !pyramidCanvas) return;
+  const rect = pyramidCanvas.getBoundingClientRect();
+  const w = rect.width || 400;
+  const h = rect.height || 260;
+  pyramidCamera.aspect = w / h;
+  pyramidCamera.updateProjectionMatrix();
+  pyramidRenderer.setSize(w, h, false);
+}
 
+function setSelectedMesh(mesh) {
+  if (selectedMesh) {
+    selectedMesh.scale.set(1, 1, 1);
+    if (selectedMesh.material && selectedMesh.material.emissive) {
+      selectedMesh.material.emissiveIntensity = 0.3;
+    }
+  }
+  selectedMesh = mesh;
+  if (selectedMesh) {
+    selectedMesh.scale.set(1.06, 1.08, 1.06);
+    if (selectedMesh.material && selectedMesh.material.emissive) {
+      selectedMesh.material.emissiveIntensity = 1.2;
+    }
+  }
+}
+
+function setHoveredMesh(mesh) {
+  if (hoveredMesh && hoveredMesh !== selectedMesh) {
+    hoveredMesh.scale.set(1, 1, 1);
+    if (hoveredMesh.material && hoveredMesh.material.emissive) {
+      hoveredMesh.material.emissiveIntensity = 0.3;
+    }
+  }
+  hoveredMesh = mesh;
+  if (hoveredMesh && hoveredMesh !== selectedMesh) {
+    hoveredMesh.scale.set(1.03, 1.04, 1.03);
+    if (hoveredMesh.material && hoveredMesh.material.emissive) {
+      hoveredMesh.material.emissiveIntensity = 0.7;
+    }
+  }
+}
+
+function initPyramid3D() {
   if (!pyramidCanvas || !window.THREE) return;
 
-  const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x020617);
+  pyramidScene = new THREE.Scene();
+  pyramidScene.background = new THREE.Color(0x020617);
 
-  const w = pyramidCanvas.clientWidth;
-  const h = pyramidCanvas.clientHeight || 260;
+  const rect = pyramidCanvas.getBoundingClientRect();
+  const w = rect.width || 400;
+  const h = rect.height || 260;
 
-  const camera = new THREE.PerspectiveCamera(35, w / h, 0.1, 100);
-  camera.position.set(0, 2.3, 5);
+  pyramidCamera = new THREE.PerspectiveCamera(35, w / h, 0.1, 100);
+  pyramidCamera.position.set(0, 2.2, 5);
 
-  const renderer = new THREE.WebGLRenderer({ canvas: pyramidCanvas, antialias: true });
-  renderer.setPixelRatio(window.devicePixelRatio || 1);
-  renderer.setSize(w, h);
+  pyramidRenderer = new THREE.WebGLRenderer({
+    canvas: pyramidCanvas,
+    antialias: true,
+    alpha: true
+  });
+  pyramidRenderer.setPixelRatio(window.devicePixelRatio || 1);
+  pyramidRenderer.setSize(w, h, false);
 
-  const ambient = new THREE.AmbientLight(0xffffff, 0.7);
-  scene.add(ambient);
+  const ambient = new THREE.AmbientLight(0xffffff, 0.5);
+  pyramidScene.add(ambient);
 
   const dir = new THREE.DirectionalLight(0xffffff, 0.9);
   dir.position.set(3, 5, 4);
-  scene.add(dir);
+  pyramidScene.add(dir);
 
-  const group = new THREE.Group();
-  scene.add(group);
+  const point = new THREE.PointLight(0x7c7bff, 1.4, 12);
+  point.position.set(-2, 3, 3);
+  pyramidScene.add(point);
 
-  const materials = {
-    base: new THREE.MeshStandardMaterial({
-      color: 0x22c55e,
-      metalness: 0.3,
-      roughness: 0.35
-    }),
-    meio: new THREE.MeshStandardMaterial({
-      color: 0x3b82f6,
-      metalness: 0.35,
-      roughness: 0.35
-    }),
-    topo: new THREE.MeshStandardMaterial({
-      color: 0xef4444,
-      metalness: 0.4,
-      roughness: 0.35
-    })
-  };
+  pyramidGroup = new THREE.Group();
+  pyramidScene.add(pyramidGroup);
 
-  function createSegment(widthTop, widthBottom, height, colorKey, y) {
+  const baseMat = new THREE.MeshStandardMaterial({
+    color: 0x22c55e,
+    metalness: 0.4,
+    roughness: 0.3,
+    emissive: 0x16351f,
+    emissiveIntensity: 0.3
+  });
+  const middleMat = new THREE.MeshStandardMaterial({
+    color: 0x3b82f6,
+    metalness: 0.45,
+    roughness: 0.3,
+    emissive: 0x102b4f,
+    emissiveIntensity: 0.3
+  });
+  const topMat = new THREE.MeshStandardMaterial({
+    color: 0xef4444,
+    metalness: 0.5,
+    roughness: 0.28,
+    emissive: 0x3b1111,
+    emissiveIntensity: 0.3
+  });
+
+  function createSegment(widthTop, widthBottom, height, mat, classe, y) {
     const geo = new THREE.CylinderGeometry(widthTop, widthBottom, height, 4, 1, false);
-    const mesh = new THREE.Mesh(geo, materials[colorKey]);
+    const mesh = new THREE.Mesh(geo, mat);
     mesh.rotation.y = Math.PI / 4;
     mesh.position.y = y;
-    mesh.userData.classe = colorKey;
+    mesh.userData.classe = classe;
     mesh.castShadow = true;
     mesh.receiveShadow = true;
-    group.add(mesh);
+    pyramidGroup.add(mesh);
     return mesh;
   }
 
-  const base = createSegment(1.7, 2.4, 0.7, "base", -0.9);
-  const middle = createSegment(1.2, 1.7, 0.7, "meio", -0.2);
-  const top = createSegment(0.7, 1.2, 0.7, "topo", 0.5);
+  const base = createSegment(1.7, 2.5, 0.7, baseMat, "base", -0.9);
+  const middle = createSegment(1.2, 1.7, 0.7, middleMat, "meio", -0.2);
+  const top = createSegment(0.7, 1.2, 0.7, topMat, "topo", 0.5);
 
-  group.rotation.x = THREE.MathUtils.degToRad(18);
-  group.rotation.y = THREE.MathUtils.degToRad(-25);
+  pyramidGroup.rotation.x = THREE.MathUtils.degToRad(18);
+  pyramidGroup.rotation.y = targetRotY;
 
-  const raycaster = new THREE.Raycaster();
-  const mouse = new THREE.Vector2();
-  let selectedMesh = null;
+  pyramidRaycaster = new THREE.Raycaster();
+  pyramidMouse = new THREE.Vector2();
 
-  function setSelected(mesh) {
-    if (selectedMesh) {
-      selectedMesh.scale.set(1, 1, 1);
-      selectedMesh.material.emissive && (selectedMesh.material.emissive.setHex(0x000000));
-    }
-    selectedMesh = mesh;
-    if (selectedMesh) {
-      selectedMesh.scale.set(1.06, 1.08, 1.06);
-      if (!selectedMesh.material.emissive) {
-        selectedMesh.material.emissive = new THREE.Color(0xffffff);
-      }
-      selectedMesh.material.emissive.setHex(0xffffff);
+  function handlePointerMove(e) {
+    const r = pyramidCanvas.getBoundingClientRect();
+    pyramidMouse.x = ((e.clientX - r.left) / r.width) * 2 - 1;
+    pyramidMouse.y = -((e.clientY - r.top) / r.height) * 2 + 1;
+
+    const normalizedX = (e.clientX - r.left) / r.width - 0.5;
+    targetRotY = -0.4 + normalizedX * 0.4;
+
+    pyramidRaycaster.setFromCamera(pyramidMouse, pyramidCamera);
+    const intersects = pyramidRaycaster.intersectObjects(pyramidGroup.children);
+    if (intersects.length > 0) {
+      setHoveredMesh(intersects[0].object);
+    } else {
+      setHoveredMesh(null);
     }
   }
 
-  function onClick(e) {
-    const rect = pyramidCanvas.getBoundingClientRect();
-    mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-    mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+  function handleClick(e) {
+    const r = pyramidCanvas.getBoundingClientRect();
+    pyramidMouse.x = ((e.clientX - r.left) / r.width) * 2 - 1;
+    pyramidMouse.y = -((e.clientY - r.top) / r.height) * 2 + 1;
 
-    raycaster.setFromCamera(mouse, camera);
-    const intersects = raycaster.intersectObjects(group.children);
-
+    pyramidRaycaster.setFromCamera(pyramidMouse, pyramidCamera);
+    const intersects = pyramidRaycaster.intersectObjects(pyramidGroup.children);
     if (intersects.length > 0) {
       const mesh = intersects[0].object;
       const classe = mesh.userData.classe;
       if (classe) {
         classeEscolhida = classe;
-        setSelected(mesh);
-        fecharModalClasse();
-
-        // Executa ação pendente, se existir
+        setSelectedMesh(mesh);
+        closeClassModal();
         if (acaoPendente) {
           if (acaoPendente.tipo === "post") {
             enviarPost(acaoPendente.texto);
@@ -269,25 +332,21 @@ function initPyramid3D() {
     }
   }
 
-  pyramidCanvas.addEventListener("click", onClick);
+  pyramidCanvas.addEventListener("mousemove", handlePointerMove);
+  pyramidCanvas.addEventListener("click", handleClick);
 
-  window.addEventListener("resize", () => {
-    const nw = pyramidCanvas.clientWidth;
-    const nh = pyramidCanvas.clientHeight || 260;
-    camera.aspect = nw / nh;
-    camera.updateProjectionMatrix();
-    renderer.setSize(nw, nh);
-  });
+  window.addEventListener("resize", resizePyramid);
 
   function animate() {
     requestAnimationFrame(animate);
-    group.rotation.y += 0.003;
-    renderer.render(scene, camera);
+    currentRotY += (targetRotY - currentRotY) * 0.08;
+    if (pyramidGroup) {
+      pyramidGroup.rotation.y = currentRotY;
+    }
+    pyramidRenderer.render(pyramidScene, pyramidCamera);
   }
   animate();
 }
-
-document.addEventListener("DOMContentLoaded", initPyramid3D);
 
 /* ===========================================
    POSTAR
@@ -299,9 +358,7 @@ const btnPostar = document.getElementById("btn-postar");
 
 async function enviarPost(texto) {
   if (!API) return alert("API não carregada.");
-
   setButtonLoading(btnPostar, true, "Postando...");
-
   try {
     const r = await fetch(`${API}/api/posts`, {
       method: "POST",
@@ -309,12 +366,10 @@ async function enviarPost(texto) {
       body: JSON.stringify({ texto, classe: classeEscolhida })
     });
     const js = await r.json();
-
     if (js.error) {
       if (postError) postError.textContent = js.error;
       return;
     }
-
     if (postText) postText.value = "";
     carregarPosts();
   } catch (e) {
@@ -333,14 +388,12 @@ if (btnPostar) {
       if (postError) postError.textContent = "Digite algo.";
       return;
     }
-
     if (!classeEscolhida) {
       if (postError) postError.textContent = "Escolha sua posição na pirâmide.";
       acaoPendente = { tipo: "post", texto };
-      abrirModalClasse();
+      openClassModal();
       return;
     }
-
     enviarPost(texto);
   });
 }
@@ -353,18 +406,11 @@ const feedEl = document.getElementById("feed");
 
 async function carregarPosts() {
   if (!API || !feedEl) return;
-
   feedEl.innerHTML = "Carregando...";
-
   try {
     const r = await fetch(`${API}/api/posts`);
     const posts = await r.json();
-
-    if (!Array.isArray(posts)) {
-      console.error("Formato inesperado de posts:", posts);
-      throw new Error("Formato inesperado");
-    }
-
+    if (!Array.isArray(posts)) throw new Error("Formato inesperado");
     renderFeed(posts);
   } catch (err) {
     console.error("Erro ao carregar posts:", err);
@@ -374,7 +420,6 @@ async function carregarPosts() {
 
 function renderFeed(posts) {
   feedEl.innerHTML = "";
-
   posts.forEach((p) => {
     const el = document.createElement("div");
     el.className = "post";
@@ -417,7 +462,6 @@ function renderFeed(posts) {
       </div>
     `;
 
-    // like
     const likeBtn = el.querySelector(".like-btn");
     const likeLabel = el.querySelector(".like-label");
 
@@ -445,7 +489,6 @@ function renderFeed(posts) {
       }
     });
 
-    // denúncia
     const reportBtn = el.querySelector(".report-btn");
     reportBtn.addEventListener("click", async () => {
       if (!API) return;
@@ -470,7 +513,6 @@ function renderFeed(posts) {
       }
     });
 
-    // respostas
     const btnToggle = el.querySelector(".ver-respostas");
     const box = el.querySelector(".reply-box");
     const replyBtn = el.querySelector(".responder-btn");
@@ -485,7 +527,6 @@ function renderFeed(posts) {
     replyBtn.addEventListener("click", () => {
       const texto = replyTextarea.value.trim();
       if (!texto) return;
-
       if (!classeEscolhida) {
         if (postError) postError.textContent = "Escolha sua posição na pirâmide para responder.";
         acaoPendente = {
@@ -495,10 +536,9 @@ function renderFeed(posts) {
           textarea: replyTextarea,
           postEl: el
         };
-        abrirModalClasse();
+        openClassModal();
         return;
       }
-
       enviarResposta(p.id, texto, replyTextarea, el);
     });
 
@@ -512,10 +552,8 @@ function renderFeed(posts) {
 
 async function enviarResposta(idPost, texto, textareaEl, postEl) {
   if (!API) return;
-
   const btn = postEl.querySelector(".responder-btn");
   setButtonLoading(btn, true, "Enviando...");
-
   try {
     const r = await fetch(`${API}/api/posts/${idPost}/replies`, {
       method: "POST",
@@ -523,12 +561,10 @@ async function enviarResposta(idPost, texto, textareaEl, postEl) {
       body: JSON.stringify({ texto, classe: classeEscolhida })
     });
     const js = await r.json();
-
     if (js.error) {
       alert(js.error);
       return;
     }
-
     textareaEl.value = "";
     carregarRespostas(idPost, postEl);
   } catch (e) {
@@ -541,11 +577,9 @@ async function enviarResposta(idPost, texto, textareaEl, postEl) {
 
 async function carregarRespostas(id, postEl) {
   if (!API) return;
-
   try {
     const r = await fetch(`${API}/api/posts/${id}/replies`);
     let data = await r.json();
-
     let replies = Array.isArray(data) ? data :
       (Array.isArray(data.replies) ? data.replies : []);
 
@@ -555,7 +589,6 @@ async function carregarRespostas(id, postEl) {
     replies.forEach((rp) => {
       const alias = rp.alias || rp.user || rp.nome || "Anônimo";
       const texto = rp.texto || rp.message || rp.msg || rp.reply_text || "";
-
       const d = document.createElement("div");
       d.className = "reply";
       d.innerHTML = `
@@ -574,11 +607,14 @@ async function carregarRespostas(id, postEl) {
 }
 
 /* ===========================================
-   AJUDA (BOTÃO ?)
+   AJUDA
 =========================================== */
 
-document.querySelector(".floating-help")?.addEventListener("click", () => {
-  alert(
-    "Este espaço é anônimo. As postagens são associadas apenas à posição na pirâmide (base, meio ou topo), nunca à sua identidade."
-  );
-});
+const helpBtn = document.querySelector(".floating-help");
+if (helpBtn) {
+  helpBtn.addEventListener("click", () => {
+    alert(
+      "Este espaço é anônimo. As postagens são associadas apenas à posição na pirâmide (base, meio ou topo), nunca à sua identidade."
+    );
+  });
+}
