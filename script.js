@@ -359,4 +359,356 @@ const currentClassLabel = document.getElementById("current-class-label");
 
 function limparSelecaoTexto() {
   [btnBase, btnMeio, btnTopo].forEach((b) => {
-    if (!b) retur
+    if (!b) return;
+    b.classList.remove("active-tag");
+  });
+}
+
+function aplicarGlowTexto(classe) {
+  limparSelecaoTexto();
+  const map = { base: btnBase, meio: btnMeio, topo: btnTopo };
+  const btn = map[classe];
+  if (btn) btn.classList.add("active-tag");
+}
+
+function atualizarLabelClasse() {
+  if (!currentClassLabel) return;
+  if (classeEscolhida === "base")
+    currentClassLabel.textContent = "Base — chão de fábrica";
+  else if (classeEscolhida === "meio")
+    currentClassLabel.textContent = "Meio — coordenação";
+  else if (classeEscolhida === "topo")
+    currentClassLabel.textContent = "Topo — diretoria";
+  else currentClassLabel.textContent = "nenhuma";
+}
+
+function selecionarClasse(classe, meshFrom3D) {
+  classeEscolhida = classe;
+  aplicarGlowTexto(classe);
+  atualizarLabelClasse();
+
+  if (meshFrom3D) {
+    setSelectedMesh(meshFrom3D);
+  } else if (pyramidGroup) {
+    const alvo = pyramidGroup.children.find(
+      (m) => m.userData && m.userData.classe === classe
+    );
+    if (alvo) setSelectedMesh(alvo);
+  }
+
+  closeClassModal();
+
+  if (acaoPendente) {
+    if (acaoPendente.tipo === "post") {
+      enviarPost(acaoPendente.texto);
+    } else if (acaoPendente.tipo === "reply") {
+      enviarResposta(
+        acaoPendente.postId,
+        acaoPendente.texto,
+        acaoPendente.textarea,
+        acaoPendente.postEl
+      );
+    }
+    acaoPendente = null;
+  }
+}
+
+if (btnBase) btnBase.addEventListener("click", () => selecionarClasse("base"));
+if (btnMeio) btnMeio.addEventListener("click", () => selecionarClasse("meio"));
+if (btnTopo) btnTopo.addEventListener("click", () => selecionarClasse("topo"));
+
+/* ===========================================
+   POSTAR
+=========================================== */
+
+const postText = document.getElementById("post-text");
+const postError = document.getElementById("post-error");
+const btnPostar = document.getElementById("btn-postar");
+const btnEscolherClasse = document.getElementById("btn-escolher-classe");
+const btnAtualizar = document.getElementById("btn-atualizar");
+
+if (btnEscolherClasse) {
+  btnEscolherClasse.addEventListener("click", () => {
+    openClassModal();
+  });
+}
+
+if (btnAtualizar) {
+  btnAtualizar.addEventListener("click", () => {
+    carregarPosts();
+  });
+}
+
+async function enviarPost(texto) {
+  if (!API) return alert("API não carregada.");
+  setButtonLoading(btnPostar, true, "Postando...");
+  try {
+    const r = await fetch(`${API}/api/posts`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ texto, classe: classeEscolhida })
+    });
+    const js = await r.json();
+    if (js.error) {
+      if (postError) postError.textContent = js.error;
+      return;
+    }
+    if (postText) postText.value = "";
+    carregarPosts();
+  } catch (e) {
+    console.error(e);
+    if (postError) postError.textContent = "Erro ao postar";
+  } finally {
+    setButtonLoading(btnPostar, false);
+  }
+}
+
+if (btnPostar) {
+  btnPostar.addEventListener("click", (e) => {
+    e.preventDefault();
+    if (!postText) return;
+    const texto = postText.value.trim();
+    if (!texto) {
+      if (postError) postError.textContent = "Digite algo.";
+      return;
+    }
+    if (!classeEscolhida) {
+      if (postError)
+        postError.textContent =
+          "Escolha sua posição na pirâmide antes de postar.";
+      acaoPendente = { tipo: "post", texto };
+      openClassModal();
+      return;
+    }
+    enviarPost(texto);
+  });
+}
+
+/* ===========================================
+   FEED
+=========================================== */
+
+const feedEl = document.getElementById("feed");
+
+async function carregarPosts() {
+  if (!API || !feedEl) return;
+  feedEl.textContent = "Carregando...";
+  try {
+    const r = await fetch(`${API}/api/posts`);
+    const posts = await r.json();
+    if (!Array.isArray(posts)) throw new Error("Formato inesperado");
+    renderFeed(posts);
+  } catch (err) {
+    console.error("Erro ao carregar posts:", err);
+    feedEl.textContent = "Erro ao carregar posts.";
+  }
+}
+
+function renderFeed(posts) {
+  feedEl.innerHTML = "";
+  posts.forEach((p) => {
+    const el = document.createElement("div");
+    el.className = "post";
+
+    const upvotes = p.upvotes || 0;
+    const repliesCount = p.replies_count || 0;
+
+    el.innerHTML = `
+      <div class="post-header">
+        <div class="avatar" style="background:${p.cor_classe || "#4b5563"}">
+          ${p.avatar && p.avatar.emoji ? escapeHtml(p.avatar.emoji) : "😶"}
+        </div>
+        <div class="post-header-info">
+          <div class="alias">${escapeHtml(p.alias || "Anônimo")}</div>
+          <div class="meta-line">${new Date(p.created_at).toLocaleString(
+            "pt-BR"
+          )}</div>
+        </div>
+      </div>
+
+      <div class="post-text">
+        ${highlightTags(p.texto || "")}
+      </div>
+
+      <div class="post-actions">
+        <button class="like-btn">
+          <span>▲</span>
+          <span class="like-label">${upvotes}</span>
+        </button>
+
+        <button class="report-btn">
+          🚩 Denunciar
+        </button>
+
+        <button class="ver-respostas">
+          Ver respostas (${repliesCount})
+        </button>
+      </div>
+
+      <div class="reply-box">
+        <textarea class="reply-textarea" placeholder="Responder..."></textarea>
+        <button class="reply-send">Enviar</button>
+        <div class="replies"></div>
+      </div>
+    `;
+
+    // like
+    const likeBtn = el.querySelector(".like-btn");
+    const likeLabel = el.querySelector(".like-label");
+    likeBtn.addEventListener("click", async () => {
+      if (!API) return;
+      likeBtn.disabled = true;
+      try {
+        const r = await fetch(`${API}/api/posts/${p.id}/vote`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ delta: 1, fingerprint: getFingerprint() })
+        });
+        const js = await r.json();
+        if (!js.error && typeof js.upvotes !== "undefined") {
+          likeLabel.textContent = js.upvotes;
+        } else if (js.error) {
+          alert(js.error);
+        }
+      } catch (e) {
+        console.error(e);
+        alert("Erro ao votar.");
+      } finally {
+        likeBtn.disabled = false;
+      }
+    });
+
+    // report
+    const reportBtn = el.querySelector(".report-btn");
+    reportBtn.addEventListener("click", async () => {
+      if (!API) return;
+      reportBtn.disabled = true;
+      try {
+        const r = await fetch(`${API}/api/posts/${p.id}/report`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ fingerprint: getFingerprint() })
+        });
+        const js = await r.json();
+        if (js.error) alert(js.error);
+        else alert("Denúncia registrada. Obrigado pelo aviso.");
+      } catch (e) {
+        console.error(e);
+        alert("Erro ao denunciar.");
+      } finally {
+        reportBtn.disabled = false;
+      }
+    });
+
+    // respostas
+    const btnToggle = el.querySelector(".ver-respostas");
+    const box = el.querySelector(".reply-box");
+    const replyBtn = el.querySelector(".reply-send");
+    const replyTextarea = el.querySelector(".reply-textarea");
+
+    btnToggle.addEventListener("click", () => {
+      const isOpen = box.style.display === "block";
+      box.style.display = isOpen ? "none" : "block";
+      if (!isOpen) carregarRespostas(p.id, el);
+    });
+
+    replyBtn.addEventListener("click", () => {
+      const texto = replyTextarea.value.trim();
+      if (!texto) return;
+      if (!classeEscolhida) {
+        if (postError)
+          postError.textContent =
+            "Escolha sua posição na pirâmide para responder.";
+        acaoPendente = {
+          tipo: "reply",
+          texto,
+          postId: p.id,
+          textarea: replyTextarea,
+          postEl: el
+        };
+        openClassModal();
+        return;
+      }
+      enviarResposta(p.id, texto, replyTextarea, el);
+    });
+
+    feedEl.appendChild(el);
+  });
+}
+
+/* ===========================================
+   RESPOSTAS
+=========================================== */
+
+async function enviarResposta(idPost, texto, textareaEl, postEl) {
+  if (!API) return;
+  const btn = postEl.querySelector(".reply-send");
+  setButtonLoading(btn, true, "Enviando...");
+  try {
+    const r = await fetch(`${API}/api/posts/${idPost}/replies`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ texto, classe: classeEscolhida })
+    });
+    const js = await r.json();
+    if (js.error) {
+      alert(js.error);
+      return;
+    }
+    textareaEl.value = "";
+    carregarRespostas(idPost, postEl);
+  } catch (e) {
+    console.error(e);
+    alert("Erro ao enviar resposta.");
+  } finally {
+    setButtonLoading(btn, false);
+  }
+}
+
+async function carregarRespostas(id, postEl) {
+  if (!API) return;
+  try {
+    const r = await fetch(`${API}/api/posts/${id}/replies`);
+    const data = await r.json();
+    const replies = Array.isArray(data)
+      ? data
+      : Array.isArray(data.replies)
+      ? data.replies
+      : [];
+
+    const box = postEl.querySelector(".replies");
+    box.innerHTML = "";
+
+    replies.forEach((rp) => {
+      const alias = rp.alias || rp.user || rp.nome || "Anônimo";
+      const texto = rp.texto || rp.message || rp.msg || rp.reply_text || "";
+      const d = document.createElement("div");
+      d.className = "reply";
+      d.innerHTML = `
+        <div class="reply-alias">${escapeHtml(alias)}</div>
+        <div class="reply-text">${highlightTags(texto)}</div>
+      `;
+      box.appendChild(d);
+    });
+
+    const btn = postEl.querySelector(".ver-respostas");
+    btn.textContent = `Ver respostas (${replies.length})`;
+  } catch (e) {
+    console.error("Erro ao carregar respostas:", e);
+    postEl.querySelector(".replies").textContent =
+      "Erro ao carregar respostas.";
+  }
+}
+
+/* ===========================================
+   AJUDA
+=========================================== */
+
+const helpBtn = document.querySelector(".floating-help");
+if (helpBtn) {
+  helpBtn.addEventListener("click", () => {
+    alert(
+      "Este espaço é anônimo. As postagens são associadas apenas à posição na pirâmide (base, meio ou topo), nunca à sua identidade."
+    );
+  });
+}
