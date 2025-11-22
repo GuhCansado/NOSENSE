@@ -11,7 +11,7 @@ async function carregarConfigAPI() {
         );
 
         const js = await r.json();
-        API = js.url_api_base;
+        API = js.url_api_base; // ex: https://wash-amanda-practice-interactions.trycloudflare.com
 
         console.log("API carregada:", API);
 
@@ -19,7 +19,8 @@ async function carregarConfigAPI() {
         carregarPosts();
     } catch (e) {
         console.error("Erro ao carregar API:", e);
-        document.getElementById("status-text").textContent = "Erro ao carregar API";
+        const st = document.getElementById("status-text");
+        if (st) st.textContent = "Erro ao carregar API";
     }
 }
 
@@ -31,6 +32,7 @@ carregarConfigAPI();
 =========================================== */
 
 function escapeHtml(text) {
+    if (!text) return "";
     return text.replace(/[&<>"']/g, (c) => ({
         "&": "&amp;",
         "<": "&lt;",
@@ -40,7 +42,10 @@ function escapeHtml(text) {
 }
 
 function highlightTags(text) {
-    return escapeHtml(text).replace(/#([\p{L}\p{N}_-]+)/gu, '<span class="tag">#$1</span>');
+    return escapeHtml(text).replace(
+        /#([\p{L}\p{N}_-]+)/gu,
+        '<span class="tag">#$1</span>'
+    );
 }
 
 function extractTags(text) {
@@ -76,7 +81,9 @@ const themeToggle = document.getElementById("theme-toggle");
 function aplicarTemaInicial() {
     const salvo = localStorage.getItem("vozespiramide_tema") || "dark";
     document.body.dataset.theme = salvo;
-    themeToggle.textContent = salvo === "dark" ? "☾" : "☀";
+    if (themeToggle) {
+        themeToggle.textContent = salvo === "dark" ? "☾" : "☀";
+    }
 }
 
 if (themeToggle) {
@@ -104,11 +111,11 @@ async function atualizarStatus() {
         const r = await fetch(`${API}/api/status`);
         if (!r.ok) throw new Error();
 
-        txt.textContent = "Servidor Online";
-        dot.className = "status-dot online";
+        if (txt) txt.textContent = "Servidor Online";
+        if (dot) dot.className = "status-dot online";
     } catch {
-        txt.textContent = "Servidor Offline";
-        dot.className = "status-dot offline";
+        if (txt) txt.textContent = "Servidor Offline";
+        if (dot) dot.className = "status-dot offline";
     }
 }
 
@@ -127,47 +134,56 @@ const btnPostar = document.getElementById("btn-postar");
 let classeEscolhida = null;
 
 /* ação pendente: post ou reply */
-let acaoPendente = null;
+let acaoPendente = null; 
+// { tipo: "post", texto } ou { tipo: "reply", texto, postId, textarea, postEl }
 
 function abrirModalClasse() {
-    classModal.classList.add("show");
+    if (classModal) classModal.classList.add("show");
 }
 
 function fecharModalClasse() {
-    classModal.classList.remove("show");
+    if (classModal) classModal.classList.remove("show");
 }
 
-modalClose.onclick = () => fecharModalClasse();
+if (modalClose) {
+    modalClose.onclick = () => fecharModalClasse();
+}
 
-/* clicar fora fecha */
-classModal.addEventListener("click", (e) => {
-    if (e.target === classModal) fecharModalClasse();
-});
+if (classModal) {
+    classModal.addEventListener("click", (e) => {
+        if (e.target === classModal) fecharModalClasse();
+    });
+}
 
 /* seleção na pirâmide */
-pyramidSvg.querySelectorAll("polygon[data-classe]").forEach(poly => {
-    poly.addEventListener("click", () => {
-        pyramidSvg.querySelectorAll("polygon[data-classe]").forEach(p => p.classList.remove("selected"));
-        poly.classList.add("selected");
-        classeEscolhida = poly.dataset.classe;
+if (pyramidSvg) {
+    pyramidSvg.querySelectorAll("polygon[data-classe]").forEach(poly => {
+        poly.addEventListener("click", () => {
+            pyramidSvg.querySelectorAll("polygon[data-classe]").forEach(p =>
+                p.classList.remove("selected")
+            );
+            poly.classList.add("selected");
+            classeEscolhida = poly.dataset.classe;
 
-        fecharModalClasse();
+            fecharModalClasse();
 
-        if (acaoPendente) {
-            if (acaoPendente.tipo === "post") {
-                enviarPost(acaoPendente.texto);
-            } else if (acaoPendente.tipo === "reply") {
-                enviarResposta(
-                    acaoPendente.postId,
-                    acaoPendente.texto,
-                    acaoPendente.textarea,
-                    acaoPendente.postEl
-                );
+            // se tiver alguma ação pendente (post ou reply), executa agora
+            if (acaoPendente) {
+                if (acaoPendente.tipo === "post") {
+                    enviarPost(acaoPendente.texto);
+                } else if (acaoPendente.tipo === "reply") {
+                    enviarResposta(
+                        acaoPendente.postId,
+                        acaoPendente.texto,
+                        acaoPendente.textarea,
+                        acaoPendente.postEl
+                    );
+                }
+                acaoPendente = null;
             }
-            acaoPendente = null;
-        }
+        });
     });
-});
+}
 
 /* ===========================================
    POSTAR
@@ -191,40 +207,42 @@ async function enviarPost(texto) {
         const js = await r.json();
 
         if (js.error) {
-            postError.textContent = js.error;
+            if (postError) postError.textContent = js.error;
             return;
         }
 
-        postText.value = "";
+        if (postText) postText.value = "";
         carregarPosts();
     } catch {
-        postError.textContent = "Erro ao postar";
+        if (postError) postError.textContent = "Erro ao postar";
     } finally {
         setButtonLoading(btnPostar, false);
     }
 }
 
-btnPostar.addEventListener("click", (e) => {
-    e.preventDefault();
-    const texto = postText.value.trim();
+if (btnPostar) {
+    btnPostar.addEventListener("click", (e) => {
+        e.preventDefault();
+        const texto = postText ? postText.value.trim() : "";
 
-    if (!texto) {
-        postError.textContent = "Digite algo.";
-        return;
-    }
+        if (!texto) {
+            if (postError) postError.textContent = "Digite algo.";
+            return;
+        }
 
-    if (!classeEscolhida) {
-        postError.textContent = "Escolha a classe.";
-        acaoPendente = { tipo: "post", texto };
-        abrirModalClasse();
-        return;
-    }
+        if (!classeEscolhida) {
+            if (postError) postError.textContent = "Escolha a classe.";
+            acaoPendente = { tipo: "post", texto };
+            abrirModalClasse();
+            return;
+        }
 
-    enviarPost(texto);
-});
+        enviarPost(texto);
+    });
+}
 
 /* ===========================================
-   SISTEMA DE LIKES
+   SISTEMA DE LIKES (FRONT + LOCALSTORAGE)
 =========================================== */
 
 function getLikes() {
@@ -259,7 +277,7 @@ function toggleLike(postId, btn) {
 const feedEl = document.getElementById("feed");
 
 async function carregarPosts() {
-    if (!API) return;
+    if (!API || !feedEl) return;
 
     feedEl.innerHTML = "Carregando...";
 
@@ -267,8 +285,14 @@ async function carregarPosts() {
         const r = await fetch(`${API}/api/posts`);
         const posts = await r.json();
 
+        if (!Array.isArray(posts)) {
+            console.error("Formato inesperado de posts:", posts);
+            throw new Error();
+        }
+
         renderFeed(posts);
-    } catch {
+    } catch (err) {
+        console.error("Erro ao carregar posts:", err);
         feedEl.innerHTML = "Erro ao carregar.";
     }
 }
@@ -323,7 +347,8 @@ function renderFeed(posts) {
         likeBtn.addEventListener("click", () => toggleLike(p.id, likeBtn));
 
         /* DENÚNCIA */
-        el.querySelector(".report-btn").addEventListener("click", () => {
+        const reportBtn = el.querySelector(".report-btn");
+        reportBtn.addEventListener("click", () => {
             alert("Obrigado! Sua denúncia será analisada.");
         });
 
@@ -345,6 +370,7 @@ function renderFeed(posts) {
             if (!texto) return;
 
             if (!classeEscolhida) {
+                if (postError) postError.textContent = "Escolha a classe para responder.";
                 acaoPendente = {
                     tipo: "reply",
                     texto,
@@ -363,8 +389,12 @@ function renderFeed(posts) {
     });
 }
 
+/* ===========================================
+   RESPOSTAS
+=========================================== */
+
 async function enviarResposta(idPost, texto, textareaEl, postEl) {
-    if (!API) return;
+    if (!API) return alert("API não carregada.");
 
     const btn = postEl.querySelector(".responder-btn");
     setButtonLoading(btn, true, "Enviando...");
@@ -385,7 +415,8 @@ async function enviarResposta(idPost, texto, textareaEl, postEl) {
 
         textareaEl.value = "";
         carregarRespostas(idPost, postEl);
-    } catch {
+    } catch (err) {
+        console.error("Erro ao enviar resposta:", err);
         alert("Erro ao enviar resposta.");
     } finally {
         setButtonLoading(btn, false);
@@ -395,26 +426,35 @@ async function enviarResposta(idPost, texto, textareaEl, postEl) {
 async function carregarRespostas(id, postEl) {
     try {
         const r = await fetch(`${API}/api/posts/${id}/replies`);
-        const replies = await r.json();
+        let data = await r.json();
+
+        // Aceita tanto [ ... ] quanto { replies: [ ... ] }
+        let replies = Array.isArray(data) ? data :
+            (Array.isArray(data.replies) ? data.replies : []);
 
         const box = postEl.querySelector(".replies");
         box.innerHTML = "";
 
         replies.forEach(rp => {
+            const alias =
+                rp.alias || rp.user || rp.nome || "Anônimo";
+            const texto =
+                rp.texto || rp.message || rp.msg || rp.reply_text || "";
+
             const d = document.createElement("div");
             d.className = "reply";
             d.innerHTML = `
-                <div class="reply-alias">${escapeHtml(rp.alias)}</div>
-                <div class="reply-text">${highlightTags(rp.texto)}</div>
+                <div class="reply-alias">${escapeHtml(alias)}</div>
+                <div class="reply-text">${highlightTags(texto)}</div>
             `;
             box.appendChild(d);
         });
 
-        // atualizar contador na UI
+        // atualizar contador no botão "Ver respostas"
         const btn = postEl.querySelector(".ver-respostas");
         btn.textContent = `Ver respostas (${replies.length})`;
-
-    } catch {
-        postEl.querySelector(".replies").innerHTML = "Erro.";
+    } catch (err) {
+        console.error("Erro ao carregar respostas:", err);
+        postEl.querySelector(".replies").innerHTML = "Erro ao carregar respostas.";
     }
 }
