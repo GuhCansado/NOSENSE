@@ -1,30 +1,28 @@
 /* ===========================================
-    BUSCAR URL DA API NO GITHUB
+   CONFIG & API DISCOVERY
 =========================================== */
 
 let API = null;
 
 async function carregarConfigAPI() {
-    try {
-        const r = await fetch(
-            "https://raw.githubusercontent.com/GuhCansado/NOSENSE/main/server_status.json"
-        );
+  try {
+    const r = await fetch(
+      "https://raw.githubusercontent.com/GuhCansado/NOSENSE/main/server_status.json"
+    );
+    const js = await r.json();
+    API = js.url_api_base;
 
-        const js = await r.json();
-        API = js.url_api_base; // ex: https://wash-amanda-practice-interactions.trycloudflare.com
+    console.log("API carregada:", API);
 
-        console.log("API carregada:", API);
-
-        atualizarStatus();
-        carregarPosts();
-    } catch (e) {
-        console.error("Erro ao carregar API:", e);
-        const st = document.getElementById("status-text");
-        if (st) st.textContent = "Erro ao carregar API";
-    }
+    atualizarStatus();
+    carregarPosts();
+  } catch (e) {
+    console.error("Erro ao carregar API:", e);
+    const txt = document.getElementById("status-text");
+    if (txt) txt.textContent = "Erro ao carregar API";
+  }
 }
 
-/* CHAMAR CONFIG IMEDIATAMENTE */
 carregarConfigAPI();
 
 /* ===========================================
@@ -32,69 +30,72 @@ carregarConfigAPI();
 =========================================== */
 
 function escapeHtml(text) {
-    if (!text) return "";
-    return text.replace(/[&<>"']/g, (c) => ({
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        '"': "&quot;"
-    }[c]));
+  if (!text) return "";
+  return text.replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;"
+  }[c]));
 }
 
 function highlightTags(text) {
-    return escapeHtml(text).replace(
-        /#([\p{L}\p{N}_-]+)/gu,
-        '<span class="tag">#$1</span>'
-    );
+  return escapeHtml(text).replace(
+    /#([\p{L}\p{N}_-]+)/gu,
+    '<span class="tag">#$1</span>'
+  );
 }
 
-function extractTags(text) {
-    const matches = text.match(/#([\p{L}\p{N}_-]+)/gu) || [];
-    return matches.map(t => t.slice(1).toLowerCase());
-}
-
-/* Botão com loading elegante */
-function setButtonLoading(btn, isLoading, labelLoading = "Carregando...") {
-    if (!btn) return;
-    if (isLoading) {
-        if (!btn.dataset.originalText) {
-            btn.dataset.originalText = btn.textContent;
-        }
-        btn.textContent = labelLoading;
-        btn.classList.add("is-loading");
-        btn.disabled = true;
-    } else {
-        btn.classList.remove("is-loading");
-        btn.disabled = false;
-        if (btn.dataset.originalText) {
-            btn.textContent = btn.dataset.originalText;
-        }
+function setButtonLoading(btn, isLoading, label = "Carregando...") {
+  if (!btn) return;
+  if (isLoading) {
+    if (!btn.dataset.originalText) {
+      btn.dataset.originalText = btn.textContent;
     }
+    btn.textContent = label;
+    btn.classList.add("is-loading");
+    btn.disabled = true;
+  } else {
+    btn.classList.remove("is-loading");
+    btn.disabled = false;
+    if (btn.dataset.originalText) {
+      btn.textContent = btn.dataset.originalText;
+    }
+  }
+}
+
+// fingerprint simples por dispositivo (pra votos/denúncia)
+function getFingerprint() {
+  let fp = localStorage.getItem("vp_fingerprint");
+  if (!fp) {
+    fp = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2);
+    localStorage.setItem("vp_fingerprint", fp);
+  }
+  return fp;
 }
 
 /* ===========================================
-   TEMA CLARO / ESCURO
+   TEMA
 =========================================== */
 
 const themeToggle = document.getElementById("theme-toggle");
 
 function aplicarTemaInicial() {
-    const salvo = localStorage.getItem("vozespiramide_tema") || "dark";
-    document.body.dataset.theme = salvo;
-    if (themeToggle) {
-        themeToggle.textContent = salvo === "dark" ? "☾" : "☀";
-    }
+  const salvo = localStorage.getItem("vp_theme") || "dark";
+  document.body.dataset.theme = salvo;
+  if (themeToggle) {
+    themeToggle.textContent = salvo === "dark" ? "☾" : "☀";
+  }
 }
 
 if (themeToggle) {
-    aplicarTemaInicial();
-
-    themeToggle.addEventListener("click", () => {
-        const atual = document.body.dataset.theme === "dark" ? "light" : "dark";
-        document.body.dataset.theme = atual;
-        localStorage.setItem("vozespiramide_tema", atual);
-        themeToggle.textContent = atual === "dark" ? "☾" : "☀";
-    });
+  aplicarTemaInicial();
+  themeToggle.addEventListener("click", () => {
+    const atual = document.body.dataset.theme === "dark" ? "light" : "dark";
+    document.body.dataset.theme = atual;
+    localStorage.setItem("vp_theme", atual);
+    themeToggle.textContent = atual === "dark" ? "☾" : "☀";
+  });
 }
 
 /* ===========================================
@@ -102,88 +103,188 @@ if (themeToggle) {
 =========================================== */
 
 async function atualizarStatus() {
-    if (!API) return;
+  if (!API) return;
+  const dot = document.getElementById("status-dot");
+  const txt = document.getElementById("status-text");
 
-    const dot = document.getElementById("status-dot");
-    const txt = document.getElementById("status-text");
-
-    try {
-        const r = await fetch(`${API}/api/status`);
-        if (!r.ok) throw new Error();
-
-        if (txt) txt.textContent = "Servidor Online";
-        if (dot) dot.className = "status-dot online";
-    } catch {
-        if (txt) txt.textContent = "Servidor Offline";
-        if (dot) dot.className = "status-dot offline";
-    }
+  try {
+    const r = await fetch(`${API}/api/status`);
+    if (!r.ok) throw new Error();
+    if (txt) txt.textContent = "Servidor Online";
+    if (dot) dot.className = "status-dot online";
+  } catch {
+    if (txt) txt.textContent = "Servidor Offline";
+    if (dot) dot.className = "status-dot offline";
+  }
 }
 
 setInterval(() => API && atualizarStatus(), 5000);
 
 /* ===========================================
-   MODAL DA PIRÂMIDE
+   PIRÂMIDE 3D (Three.js)
 =========================================== */
 
-const classModal = document.getElementById("class-modal-backdrop");
-const btnEscolher = document.getElementById("btn-escolher-classe");
-const modalClose = document.getElementById("modal-close");
-const pyramidSvg = document.getElementById("pyramid-svg");
-const btnPostar = document.getElementById("btn-postar");
-
 let classeEscolhida = null;
-
-/* ação pendente: post ou reply */
 let acaoPendente = null; 
-// { tipo: "post", texto } ou { tipo: "reply", texto, postId, textarea, postEl }
+// { tipo: 'post', texto } ou { tipo: 'reply', texto, postId, textarea, postEl }
+
+const classModal = document.getElementById("class-modal-backdrop");
+const modalClose = document.getElementById("modal-close");
+const pyramidCanvas = document.getElementById("pyramid-canvas");
 
 function abrirModalClasse() {
-    if (classModal) classModal.classList.add("show");
+  if (classModal) classModal.classList.add("show");
 }
 
 function fecharModalClasse() {
-    if (classModal) classModal.classList.remove("show");
+  if (classModal) classModal.classList.remove("show");
 }
 
 if (modalClose) {
-    modalClose.onclick = () => fecharModalClasse();
+  modalClose.addEventListener("click", fecharModalClasse);
 }
 
 if (classModal) {
-    classModal.addEventListener("click", (e) => {
-        if (e.target === classModal) fecharModalClasse();
-    });
+  classModal.addEventListener("click", (e) => {
+    if (e.target === classModal) fecharModalClasse();
+  });
 }
 
-/* seleção na pirâmide */
-if (pyramidSvg) {
-    pyramidSvg.querySelectorAll("polygon[data-classe]").forEach(poly => {
-        poly.addEventListener("click", () => {
-            pyramidSvg.querySelectorAll("polygon[data-classe]").forEach(p =>
-                p.classList.remove("selected")
+function initPyramid3D() {
+  if (!pyramidCanvas || !window.THREE) return;
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x020617);
+
+  const w = pyramidCanvas.clientWidth;
+  const h = pyramidCanvas.clientHeight || 260;
+
+  const camera = new THREE.PerspectiveCamera(35, w / h, 0.1, 100);
+  camera.position.set(0, 2.3, 5);
+
+  const renderer = new THREE.WebGLRenderer({ canvas: pyramidCanvas, antialias: true });
+  renderer.setPixelRatio(window.devicePixelRatio || 1);
+  renderer.setSize(w, h);
+
+  const ambient = new THREE.AmbientLight(0xffffff, 0.7);
+  scene.add(ambient);
+
+  const dir = new THREE.DirectionalLight(0xffffff, 0.9);
+  dir.position.set(3, 5, 4);
+  scene.add(dir);
+
+  const group = new THREE.Group();
+  scene.add(group);
+
+  const materials = {
+    base: new THREE.MeshStandardMaterial({
+      color: 0x22c55e,
+      metalness: 0.3,
+      roughness: 0.35
+    }),
+    meio: new THREE.MeshStandardMaterial({
+      color: 0x3b82f6,
+      metalness: 0.35,
+      roughness: 0.35
+    }),
+    topo: new THREE.MeshStandardMaterial({
+      color: 0xef4444,
+      metalness: 0.4,
+      roughness: 0.35
+    })
+  };
+
+  function createSegment(widthTop, widthBottom, height, colorKey, y) {
+    const geo = new THREE.CylinderGeometry(widthTop, widthBottom, height, 4, 1, false);
+    const mesh = new THREE.Mesh(geo, materials[colorKey]);
+    mesh.rotation.y = Math.PI / 4;
+    mesh.position.y = y;
+    mesh.userData.classe = colorKey;
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    group.add(mesh);
+    return mesh;
+  }
+
+  const base = createSegment(1.7, 2.4, 0.7, "base", -0.9);
+  const middle = createSegment(1.2, 1.7, 0.7, "meio", -0.2);
+  const top = createSegment(0.7, 1.2, 0.7, "topo", 0.5);
+
+  group.rotation.x = THREE.MathUtils.degToRad(18);
+  group.rotation.y = THREE.MathUtils.degToRad(-25);
+
+  const raycaster = new THREE.Raycaster();
+  const mouse = new THREE.Vector2();
+  let selectedMesh = null;
+
+  function setSelected(mesh) {
+    if (selectedMesh) {
+      selectedMesh.scale.set(1, 1, 1);
+      selectedMesh.material.emissive && (selectedMesh.material.emissive.setHex(0x000000));
+    }
+    selectedMesh = mesh;
+    if (selectedMesh) {
+      selectedMesh.scale.set(1.06, 1.08, 1.06);
+      if (!selectedMesh.material.emissive) {
+        selectedMesh.material.emissive = new THREE.Color(0xffffff);
+      }
+      selectedMesh.material.emissive.setHex(0xffffff);
+    }
+  }
+
+  function onClick(e) {
+    const rect = pyramidCanvas.getBoundingClientRect();
+    mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+    mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObjects(group.children);
+
+    if (intersects.length > 0) {
+      const mesh = intersects[0].object;
+      const classe = mesh.userData.classe;
+      if (classe) {
+        classeEscolhida = classe;
+        setSelected(mesh);
+        fecharModalClasse();
+
+        // Executa ação pendente, se existir
+        if (acaoPendente) {
+          if (acaoPendente.tipo === "post") {
+            enviarPost(acaoPendente.texto);
+          } else if (acaoPendente.tipo === "reply") {
+            enviarResposta(
+              acaoPendente.postId,
+              acaoPendente.texto,
+              acaoPendente.textarea,
+              acaoPendente.postEl
             );
-            poly.classList.add("selected");
-            classeEscolhida = poly.dataset.classe;
+          }
+          acaoPendente = null;
+        }
+      }
+    }
+  }
 
-            fecharModalClasse();
+  pyramidCanvas.addEventListener("click", onClick);
 
-            // se tiver alguma ação pendente (post ou reply), executa agora
-            if (acaoPendente) {
-                if (acaoPendente.tipo === "post") {
-                    enviarPost(acaoPendente.texto);
-                } else if (acaoPendente.tipo === "reply") {
-                    enviarResposta(
-                        acaoPendente.postId,
-                        acaoPendente.texto,
-                        acaoPendente.textarea,
-                        acaoPendente.postEl
-                    );
-                }
-                acaoPendente = null;
-            }
-        });
-    });
+  window.addEventListener("resize", () => {
+    const nw = pyramidCanvas.clientWidth;
+    const nh = pyramidCanvas.clientHeight || 260;
+    camera.aspect = nw / nh;
+    camera.updateProjectionMatrix();
+    renderer.setSize(nw, nh);
+  });
+
+  function animate() {
+    requestAnimationFrame(animate);
+    group.rotation.y += 0.003;
+    renderer.render(scene, camera);
+  }
+  animate();
 }
+
+document.addEventListener("DOMContentLoaded", initPyramid3D);
 
 /* ===========================================
    POSTAR
@@ -191,83 +292,54 @@ if (pyramidSvg) {
 
 const postText = document.getElementById("post-text");
 const postError = document.getElementById("post-error");
+const btnPostar = document.getElementById("btn-postar");
 
 async function enviarPost(texto) {
-    if (!API) return alert("API não carregada.");
+  if (!API) return alert("API não carregada.");
 
-    setButtonLoading(btnPostar, true, "Postando...");
+  setButtonLoading(btnPostar, true, "Postando...");
 
-    try {
-        const r = await fetch(`${API}/api/posts`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ texto, classe: classeEscolhida })
-        });
+  try {
+    const r = await fetch(`${API}/api/posts`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ texto, classe: classeEscolhida })
+    });
+    const js = await r.json();
 
-        const js = await r.json();
-
-        if (js.error) {
-            if (postError) postError.textContent = js.error;
-            return;
-        }
-
-        if (postText) postText.value = "";
-        carregarPosts();
-    } catch {
-        if (postError) postError.textContent = "Erro ao postar";
-    } finally {
-        setButtonLoading(btnPostar, false);
+    if (js.error) {
+      if (postError) postError.textContent = js.error;
+      return;
     }
+
+    if (postText) postText.value = "";
+    carregarPosts();
+  } catch (e) {
+    console.error(e);
+    if (postError) postError.textContent = "Erro ao postar";
+  } finally {
+    setButtonLoading(btnPostar, false);
+  }
 }
 
 if (btnPostar) {
-    btnPostar.addEventListener("click", (e) => {
-        e.preventDefault();
-        const texto = postText ? postText.value.trim() : "";
-
-        if (!texto) {
-            if (postError) postError.textContent = "Digite algo.";
-            return;
-        }
-
-        if (!classeEscolhida) {
-            if (postError) postError.textContent = "Escolha a classe.";
-            acaoPendente = { tipo: "post", texto };
-            abrirModalClasse();
-            return;
-        }
-
-        enviarPost(texto);
-    });
-}
-
-/* ===========================================
-   SISTEMA DE LIKES (FRONT + LOCALSTORAGE)
-=========================================== */
-
-function getLikes() {
-    return JSON.parse(localStorage.getItem("likes_piramide") || "{}");
-}
-
-function saveLikes(data) {
-    localStorage.setItem("likes_piramide", JSON.stringify(data));
-}
-
-function toggleLike(postId, btn) {
-    let likes = getLikes();
-
-    if (!likes[postId]) likes[postId] = 0;
-
-    if (btn.classList.contains("active")) {
-        btn.classList.remove("active");
-        likes[postId] = Math.max(0, likes[postId] - 1);
-    } else {
-        btn.classList.add("active");
-        likes[postId] += 1;
+  btnPostar.addEventListener("click", (e) => {
+    e.preventDefault();
+    const texto = postText ? postText.value.trim() : "";
+    if (!texto) {
+      if (postError) postError.textContent = "Digite algo.";
+      return;
     }
 
-    saveLikes(likes);
-    btn.innerHTML = `♥ Curtir (${likes[postId]})`;
+    if (!classeEscolhida) {
+      if (postError) postError.textContent = "Escolha sua posição na pirâmide.";
+      acaoPendente = { tipo: "post", texto };
+      abrirModalClasse();
+      return;
+    }
+
+    enviarPost(texto);
+  });
 }
 
 /* ===========================================
@@ -277,116 +349,158 @@ function toggleLike(postId, btn) {
 const feedEl = document.getElementById("feed");
 
 async function carregarPosts() {
-    if (!API || !feedEl) return;
+  if (!API || !feedEl) return;
 
-    feedEl.innerHTML = "Carregando...";
+  feedEl.innerHTML = "Carregando...";
 
-    try {
-        const r = await fetch(`${API}/api/posts`);
-        const posts = await r.json();
+  try {
+    const r = await fetch(`${API}/api/posts`);
+    const posts = await r.json();
 
-        if (!Array.isArray(posts)) {
-            console.error("Formato inesperado de posts:", posts);
-            throw new Error();
-        }
-
-        renderFeed(posts);
-    } catch (err) {
-        console.error("Erro ao carregar posts:", err);
-        feedEl.innerHTML = "Erro ao carregar.";
+    if (!Array.isArray(posts)) {
+      console.error("Formato inesperado de posts:", posts);
+      throw new Error("Formato inesperado");
     }
+
+    renderFeed(posts);
+  } catch (err) {
+    console.error("Erro ao carregar posts:", err);
+    feedEl.innerHTML = "Erro ao carregar posts.";
+  }
 }
 
 function renderFeed(posts) {
-    feedEl.innerHTML = "";
+  feedEl.innerHTML = "";
 
-    let storedLikes = getLikes();
+  posts.forEach((p) => {
+    const el = document.createElement("div");
+    el.className = "post";
 
-    posts.forEach(p => {
-        const el = document.createElement("div");
-        el.className = "post";
+    const upvotes = p.upvotes || 0;
 
-        let likeCount = storedLikes[p.id] || 0;
+    el.innerHTML = `
+      <div class="post-header">
+        <div class="avatar" style="background:${p.cor_classe || "#4b5563"}">
+          ${p.avatar?.emoji || "😶"}
+        </div>
+        <div class="post-header-info">
+          <div class="alias">${escapeHtml(p.alias || "Anônimo")}</div>
+          <div class="meta-line">${new Date(p.created_at).toLocaleString("pt-BR")}</div>
+        </div>
+      </div>
 
-        el.innerHTML = `
-            <div class="post-header">
-                <div class="avatar" style="background:${p.cor_classe}">
-                    ${p.avatar?.emoji || "😶"}
-                </div>
-                <div>
-                    <div class="alias">${escapeHtml(p.alias)}</div>
-                    <div class="meta-line">${new Date(p.created_at).toLocaleString("pt-BR")}</div>
-                </div>
-            </div>
+      <div class="post-text">
+        ${highlightTags(p.texto || "")}
+      </div>
 
-            <div class="post-text">${highlightTags(p.texto)}</div>
+      <div class="post-actions">
+        <button class="like-btn">
+          <span>▲</span> <span class="like-label">${upvotes}</span>
+        </button>
 
-            <div class="post-actions">
-                <button class="like-btn ${likeCount > 0 ? "active" : ""}">
-                    ♥ Curtir (${likeCount})
-                </button>
+        <button class="report-btn">
+          🚩 Denunciar
+        </button>
 
-                <button class="report-btn">
-                    🚩 Denunciar
-                </button>
+        <button class="ver-respostas">
+          Ver respostas (${p.replies_count || 0})
+        </button>
+      </div>
 
-                <button class="ver-respostas">
-                    Ver respostas (${p.replies_count || 0})
-                </button>
-            </div>
+      <div class="reply-box">
+        <textarea class="reply-textarea" placeholder="Responder..."></textarea>
+        <button class="primary-btn responder-btn">Enviar</button>
+        <div class="replies"></div>
+      </div>
+    `;
 
-            <div class="reply-box">
-                <textarea class="reply-textarea" placeholder="Responder..."></textarea>
-                <button class="primary-btn responder-btn">Enviar</button>
-                <div class="replies"></div>
-            </div>
-        `;
+    // like
+    const likeBtn = el.querySelector(".like-btn");
+    const likeLabel = el.querySelector(".like-label");
 
-        /* LIKE */
-        const likeBtn = el.querySelector(".like-btn");
-        likeBtn.addEventListener("click", () => toggleLike(p.id, likeBtn));
-
-        /* DENÚNCIA */
-        const reportBtn = el.querySelector(".report-btn");
-        reportBtn.addEventListener("click", () => {
-            alert("Obrigado! Sua denúncia será analisada.");
+    likeBtn.addEventListener("click", async () => {
+      if (!API) return;
+      likeBtn.disabled = true;
+      try {
+        const r = await fetch(`${API}/api/posts/${p.id}/vote`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ delta: 1, fingerprint: getFingerprint() })
         });
-
-        /* RESPOSTAS */
-        const btnToggle = el.querySelector(".ver-respostas");
-        const box = el.querySelector(".reply-box");
-
-        btnToggle.onclick = () => {
-            const isOpen = box.style.display === "block";
-            box.style.display = isOpen ? "none" : "block";
-            if (!isOpen) carregarRespostas(p.id, el);
-        };
-
-        const replyBtn = el.querySelector(".responder-btn");
-        const replyTextarea = el.querySelector(".reply-textarea");
-
-        replyBtn.onclick = () => {
-            const texto = replyTextarea.value.trim();
-            if (!texto) return;
-
-            if (!classeEscolhida) {
-                if (postError) postError.textContent = "Escolha a classe para responder.";
-                acaoPendente = {
-                    tipo: "reply",
-                    texto,
-                    postId: p.id,
-                    textarea: replyTextarea,
-                    postEl: el
-                };
-                abrirModalClasse();
-                return;
-            }
-
-            enviarResposta(p.id, texto, replyTextarea, el);
-        };
-
-        feedEl.appendChild(el);
+        const js = await r.json();
+        if (!js.error) {
+          likeLabel.textContent = js.upvotes || 0;
+          likeBtn.classList.add("active");
+        } else {
+          alert(js.error);
+        }
+      } catch (e) {
+        console.error(e);
+        alert("Erro ao votar.");
+      } finally {
+        likeBtn.disabled = false;
+      }
     });
+
+    // denúncia
+    const reportBtn = el.querySelector(".report-btn");
+    reportBtn.addEventListener("click", async () => {
+      if (!API) return;
+      reportBtn.disabled = true;
+      try {
+        const r = await fetch(`${API}/api/posts/${p.id}/report`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ fingerprint: getFingerprint() })
+        });
+        const js = await r.json();
+        if (!js.error) {
+          alert("Denúncia registrada. Obrigado pelo aviso.");
+        } else {
+          alert(js.error);
+        }
+      } catch (e) {
+        console.error(e);
+        alert("Erro ao denunciar.");
+      } finally {
+        reportBtn.disabled = false;
+      }
+    });
+
+    // respostas
+    const btnToggle = el.querySelector(".ver-respostas");
+    const box = el.querySelector(".reply-box");
+    const replyBtn = el.querySelector(".responder-btn");
+    const replyTextarea = el.querySelector(".reply-textarea");
+
+    btnToggle.addEventListener("click", () => {
+      const open = box.style.display === "block";
+      box.style.display = open ? "none" : "block";
+      if (!open) carregarRespostas(p.id, el);
+    });
+
+    replyBtn.addEventListener("click", () => {
+      const texto = replyTextarea.value.trim();
+      if (!texto) return;
+
+      if (!classeEscolhida) {
+        if (postError) postError.textContent = "Escolha sua posição na pirâmide para responder.";
+        acaoPendente = {
+          tipo: "reply",
+          texto,
+          postId: p.id,
+          textarea: replyTextarea,
+          postEl: el
+        };
+        abrirModalClasse();
+        return;
+      }
+
+      enviarResposta(p.id, texto, replyTextarea, el);
+    });
+
+    feedEl.appendChild(el);
+  });
 }
 
 /* ===========================================
@@ -394,67 +508,74 @@ function renderFeed(posts) {
 =========================================== */
 
 async function enviarResposta(idPost, texto, textareaEl, postEl) {
-    if (!API) return alert("API não carregada.");
+  if (!API) return;
 
-    const btn = postEl.querySelector(".responder-btn");
-    setButtonLoading(btn, true, "Enviando...");
+  const btn = postEl.querySelector(".responder-btn");
+  setButtonLoading(btn, true, "Enviando...");
 
-    try {
-        const r = await fetch(`${API}/api/posts/${idPost}/replies`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ texto, classe: classeEscolhida })
-        });
+  try {
+    const r = await fetch(`${API}/api/posts/${idPost}/replies`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ texto, classe: classeEscolhida })
+    });
+    const js = await r.json();
 
-        const js = await r.json();
-
-        if (js.error) {
-            alert(js.error);
-            return;
-        }
-
-        textareaEl.value = "";
-        carregarRespostas(idPost, postEl);
-    } catch (err) {
-        console.error("Erro ao enviar resposta:", err);
-        alert("Erro ao enviar resposta.");
-    } finally {
-        setButtonLoading(btn, false);
+    if (js.error) {
+      alert(js.error);
+      return;
     }
+
+    textareaEl.value = "";
+    carregarRespostas(idPost, postEl);
+  } catch (e) {
+    console.error(e);
+    alert("Erro ao enviar resposta.");
+  } finally {
+    setButtonLoading(btn, false);
+  }
 }
 
 async function carregarRespostas(id, postEl) {
-    try {
-        const r = await fetch(`${API}/api/posts/${id}/replies`);
-        let data = await r.json();
+  if (!API) return;
 
-        // Aceita tanto [ ... ] quanto { replies: [ ... ] }
-        let replies = Array.isArray(data) ? data :
-            (Array.isArray(data.replies) ? data.replies : []);
+  try {
+    const r = await fetch(`${API}/api/posts/${id}/replies`);
+    let data = await r.json();
 
-        const box = postEl.querySelector(".replies");
-        box.innerHTML = "";
+    let replies = Array.isArray(data) ? data :
+      (Array.isArray(data.replies) ? data.replies : []);
 
-        replies.forEach(rp => {
-            const alias =
-                rp.alias || rp.user || rp.nome || "Anônimo";
-            const texto =
-                rp.texto || rp.message || rp.msg || rp.reply_text || "";
+    const box = postEl.querySelector(".replies");
+    box.innerHTML = "";
 
-            const d = document.createElement("div");
-            d.className = "reply";
-            d.innerHTML = `
-                <div class="reply-alias">${escapeHtml(alias)}</div>
-                <div class="reply-text">${highlightTags(texto)}</div>
-            `;
-            box.appendChild(d);
-        });
+    replies.forEach((rp) => {
+      const alias = rp.alias || rp.user || rp.nome || "Anônimo";
+      const texto = rp.texto || rp.message || rp.msg || rp.reply_text || "";
 
-        // atualizar contador no botão "Ver respostas"
-        const btn = postEl.querySelector(".ver-respostas");
-        btn.textContent = `Ver respostas (${replies.length})`;
-    } catch (err) {
-        console.error("Erro ao carregar respostas:", err);
-        postEl.querySelector(".replies").innerHTML = "Erro ao carregar respostas.";
-    }
+      const d = document.createElement("div");
+      d.className = "reply";
+      d.innerHTML = `
+        <div class="reply-alias">${escapeHtml(alias)}</div>
+        <div class="reply-text">${highlightTags(texto)}</div>
+      `;
+      box.appendChild(d);
+    });
+
+    const btn = postEl.querySelector(".ver-respostas");
+    btn.textContent = `Ver respostas (${replies.length})`;
+  } catch (e) {
+    console.error("Erro ao carregar respostas:", e);
+    postEl.querySelector(".replies").innerHTML = "Erro ao carregar respostas.";
+  }
 }
+
+/* ===========================================
+   AJUDA (BOTÃO ?)
+=========================================== */
+
+document.querySelector(".floating-help")?.addEventListener("click", () => {
+  alert(
+    "Este espaço é anônimo. As postagens são associadas apenas à posição na pirâmide (base, meio ou topo), nunca à sua identidade."
+  );
+});
