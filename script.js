@@ -217,13 +217,13 @@ function initPyramid3D() {
   pyramidScene.background = new THREE.Color(0x020617);
 
   const rect = pyramidCanvas.getBoundingClientRect();
-  const w = rect.width || 400;
-  const h = rect.height || 260;
+  const w = rect.width || 500;
+  const h = rect.height || 320;
 
-  // === Câmera (centralizada) ===
-  pyramidCamera = new THREE.PerspectiveCamera(40, w / h, 0.1, 100);
-  pyramidCamera.position.set(0, 2.2, 6.5);
-  pyramidCamera.lookAt(0, 1.2, 0);
+  // === Câmera (centralizada mostrando a base) ===
+  pyramidCamera = new THREE.PerspectiveCamera(38, w / h, 0.1, 100);
+  pyramidCamera.position.set(0, 2.4, 7.0);
+  pyramidCamera.lookAt(0, 1.4, 0);
 
   // === Renderer ===
   pyramidRenderer = new THREE.WebGLRenderer({
@@ -235,211 +235,276 @@ function initPyramid3D() {
   pyramidRenderer.setSize(w, h, false);
 
   // === Luzes ===
-  const ambient = new THREE.AmbientLight(0xffffff, 0.4);
-  pyramidScene.add(ambient);
+  pyramidScene.add(new THREE.AmbientLight(0xffffff, 0.55));
 
-  const dir = new THREE.DirectionalLight(0xffffff, 1.0);
-  dir.position.set(3, 6, 4);
+  const dir = new THREE.DirectionalLight(0xffffff, 1.1);
+  dir.position.set(4, 6, 5);
   pyramidScene.add(dir);
 
-  const point = new THREE.PointLight(0x7c7bff, 1.6, 14);
-  point.position.set(-3, 3.5, 4.5);
-  pyramidScene.add(point);
+  const glowLight = new THREE.PointLight(0x7f8cff, 1.7, 16);
+  glowLight.position.set(-3, 4, 4);
+  pyramidScene.add(glowLight);
 
-  // === Grupo da pirâmide ===
+  // === Grupo principal (move tudo junto) ===
   pyramidGroup = new THREE.Group();
-  pyramidGroup.position.set(0, 1.2, 0); // central
+  pyramidGroup.position.set(0, 1.4, 0);
   pyramidScene.add(pyramidGroup);
 
-  // === Materiais "neon" transparentes ===
-  const baseMat = new THREE.MeshStandardMaterial({
-    color: 0x22c55e,
-    metalness: 0.4,
-    roughness: 0.25,
-    transparent: true,
-    opacity: 0.85,
-    emissive: 0x102915,
-    emissiveIntensity: 0.4
-  });
-
-  const middleMat = new THREE.MeshStandardMaterial({
-    color: 0x3b82f6,
-    metalness: 0.45,
-    roughness: 0.25,
-    transparent: true,
-    opacity: 0.85,
-    emissive: 0x0b2145,
-    emissiveIntensity: 0.4
-  });
-
-  const topMat = new THREE.MeshStandardMaterial({
-    color: 0xef4444,
-    metalness: 0.5,
-    roughness: 0.22,
-    transparent: true,
-    opacity: 0.9,
-    emissive: 0x3b1010,
-    emissiveIntensity: 0.45
-  });
-
-  // Helper para criar fatias + contorno neon
-  function createSegment(widthTop, widthBottom, height, mat, classe, y) {
-    const geo = new THREE.CylinderGeometry(
-      widthTop,
-      widthBottom,
-      height,
-      4,
-      1,
-      false
-    );
-    const mesh = new THREE.Mesh(geo, mat);
-    mesh.rotation.y = Math.PI / 4;
-    mesh.position.y = y;
-    mesh.userData.classe = classe;
-
-    // Contorno (somente bordas, meio "vazio")
-    const edges = new THREE.EdgesGeometry(geo);
-    const line = new THREE.LineSegments(
-      edges,
-      new THREE.LineBasicMaterial({
-        color: 0xffffff,
-        transparent: true,
-        opacity: 0.9,
-        linewidth: 2
-      })
-    );
-    mesh.add(line);
-
-    pyramidGroup.add(mesh);
-    return mesh;
+  // ============================
+  //   MATERIAIS "PLASMA"
+  // ============================
+  function plasmaMaterial(colorHex) {
+    return new THREE.MeshPhongMaterial({
+      color: colorHex,
+      emissive: colorHex,
+      emissiveIntensity: 0.4,
+      shininess: 100,
+      transparent: true,
+      opacity: 0.75
+    });
   }
 
-  // Altura de cada fatia (mais pontuda)
-  const sliceHeight = 1.0;
-  createSegment(1.8, 2.8, sliceHeight * 1.05, baseMat, "base", -sliceHeight * 1.1);
-  createSegment(1.2, 1.8, sliceHeight * 0.98, middleMat, "meio", 0);
-  createSegment(0.5, 1.2, sliceHeight * 0.9, topMat, "topo", sliceHeight * 1.15);
+  const baseMat = plasmaMaterial(0x22c55e);
+  const midMat  = plasmaMaterial(0x3b82f6);
+  const topMat  = plasmaMaterial(0xef4444);
 
-  // Inclinação & rotação inicial
-  pyramidGroup.rotation.x = THREE.MathUtils.degToRad(18);
-  pyramidGroup.rotation.y = targetRotY;
+  // Wireframe sutil por cima (efeito holograma)
+  const outlineMaterial = new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0.18,
+    wireframe: true,
+    depthWrite: false
+  });
 
-  // === Textos "BASE / MEIO / TOPO" no centro de cada camada ===
+  // Guardar segmentos para animar depois
+  const plasmaSegments = [];
 
-  function createLabelSprite(text, colorHex, classe, yPos) {
+  // ============================
+  //   TEXTO 3D (Sprite) POR CAMADA
+  // ============================
+  function criarTextoSprite(texto, classe, corHex) {
     const canvas = document.createElement("canvas");
-    canvas.width = 256;
-    canvas.height = 128;
     const ctx = canvas.getContext("2d");
 
+    canvas.width = 256;
+    canvas.height = 128;
+
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.font = "bold 42px system-ui";
+    const cor = "#" + corHex.toString(16).padStart(6, "0");
+
+    ctx.font = "bold 40px system-ui";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
 
     ctx.fillStyle = "rgba(0,0,0,0)";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    const color = `#${colorHex.toString(16).padStart(6, "0")}`;
-    ctx.fillStyle = color;
-    ctx.shadowColor = color;
-    ctx.shadowBlur = 20;
-    ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+    ctx.fillStyle = cor;
+    ctx.shadowColor = cor;
+    ctx.shadowBlur = 22;
+    ctx.fillText(texto, canvas.width / 2, canvas.height / 2);
 
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.needsUpdate = true;
-    const material = new THREE.SpriteMaterial({
-      map: texture,
-      transparent: true
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.needsUpdate = true;
+
+    const mat = new THREE.SpriteMaterial({
+      map: tex,
+      transparent: true,
+      depthWrite: false,
+      opacity: 0.9
     });
 
-    const sprite = new THREE.Sprite(material);
-    sprite.scale.set(1.5, 0.7, 1);
-    sprite.position.set(0, yPos, 0.2);
-    sprite.userData.classe = classe; // IMPORTANTE: torna o texto clicável
-
-    pyramidGroup.add(sprite);
+    const sprite = new THREE.Sprite(mat);
+    sprite.scale.set(2.2, 1.0, 1);
+    sprite.userData.classe = classe; // clicável!
     return sprite;
   }
 
-  // BASE / MEIO / TOPO (cliques vão funcionar igual às fatias)
-  createLabelSprite("BASE", 0xbbf7d0, "base", -0.4);
-  createLabelSprite("MEIO", 0xbfdbfe, "meio", 0.55);
-  createLabelSprite("TOPO", 0xfecaca, "topo", 1.55);
+  // ============================
+  //   CRIA SEGMENTO DA PIRÂMIDE
+  // ============================
+  function createSegment(top, bottom, height, mat, classe, y, labelText, labelColor) {
+    const geo = new THREE.CylinderGeometry(top, bottom, height, 4, 1, false);
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.rotation.y = Math.PI / 4;
+    mesh.position.y = y;
+    mesh.userData.classe = classe;
 
-  // === Raycaster ===
+    const outline = new THREE.Mesh(geo, outlineMaterial);
+    outline.rotation.copy(mesh.rotation);
+    outline.position.copy(mesh.position);
+    outline.userData.classe = classe;
+
+    const label = criarTextoSprite(labelText, classe, labelColor);
+    label.position.set(0, y + 0.05, 0);
+
+    pyramidGroup.add(mesh);
+    pyramidGroup.add(outline);
+    pyramidGroup.add(label);
+
+    plasmaSegments.push(mesh);
+
+    return mesh;
+  }
+
+  // ============================
+  //   ESTRUTURA DA PIRÂMIDE
+  // ============================
+  const h = 1.1;
+
+  createSegment(1.9, 3.1, h * 1.05, baseMat, "base", -h * 1.1, "BASE", 0x86efac);
+  createSegment(1.15, 1.9, h * 0.98, midMat,  "meio",  0,        "MEIO", 0x93c5fd);
+  createSegment(0.55, 1.15, h * 0.9,  topMat, "topo",  h * 1.1,  "TOPO", 0xfca5a5);
+
+  // Inclinação inicial
+  pyramidGroup.rotation.x = THREE.MathUtils.degToRad(20);
+  pyramidGroup.rotation.y = targetRotY;
+
+  // ============================
+  //   PARTÍCULAS "ENERGIA"
+  // ============================
+  const particleCount = 420;
+  const positions = new Float32Array(particleCount * 3);
+  const speeds    = new Float32Array(particleCount);
+
+  const radius = 1.6;      // raio da base das partículas
+  const minY   = -1.4;     // ponto mais baixo (abaixo da base)
+  const maxY   =  2.6;     // topo do volume
+
+  for (let i = 0; i < particleCount; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const r     = Math.random() * radius * 0.8;
+
+    const x = Math.cos(angle) * r;
+    const z = Math.sin(angle) * r;
+    const y = minY + Math.random() * (maxY - minY);
+
+    positions[i * 3 + 0] = x;
+    positions[i * 3 + 1] = y;
+    positions[i * 3 + 2] = z;
+
+    speeds[i] = 0.008 + Math.random() * 0.012;
+  }
+
+  const particleGeometry = new THREE.BufferGeometry();
+  particleGeometry.setAttribute(
+    "position",
+    new THREE.BufferAttribute(positions, 3)
+  );
+
+  const particleMaterial = new THREE.PointsMaterial({
+    color: 0x9bdcff,
+    size: 0.05,
+    transparent: true,
+    opacity: 0.95,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending
+  });
+
+  const particles = new THREE.Points(particleGeometry, particleMaterial);
+  pyramidGroup.add(particles);
+
+  // ============================
+  //   RAYCASTER / INTERAÇÃO
+  // ============================
   pyramidRaycaster = new THREE.Raycaster();
   pyramidMouse = new THREE.Vector2();
 
-  // Procura primeira interseção que tenha userData.classe
-  function pickClasseFromIntersects(intersects) {
-    for (const inter of intersects) {
-      const obj = inter.object;
-      if (obj.userData && obj.userData.classe) {
-        return obj.userData.classe;
-      }
-    }
-    return null;
-  }
-
-  // === Mouse move (hover com rotação suave) ===
-  function handlePointerMove(e) {
+  function pointerMove(e) {
     const r = pyramidCanvas.getBoundingClientRect();
     pyramidMouse.x = ((e.clientX - r.left) / r.width) * 2 - 1;
     pyramidMouse.y = -((e.clientY - r.top) / r.height) * 2 + 1;
 
-    const normalizedX = (e.clientX - r.left) / r.width - 0.5;
-    targetRotY = -0.35 + normalizedX * 0.4;
+    const tilt = (e.clientX - r.left) / r.width - 0.5;
+    targetRotY = tilt * 0.6;
 
     pyramidRaycaster.setFromCamera(pyramidMouse, pyramidCamera);
-    const intersects = pyramidRaycaster.intersectObjects(
-      pyramidGroup.children,
-      true
-    );
+    const hits = pyramidRaycaster.intersectObjects(pyramidGroup.children, true);
 
-    const classeHit = pickClasseFromIntersects(intersects);
-    if (classeHit && pyramidGroup) {
-      const alvo = pyramidGroup.children.find(
-        (m) => m.userData && m.userData.classe === classeHit
-      );
-      if (alvo) {
-        setHoveredMesh(alvo);
+    if (hits.length > 0) {
+      // acha o primeiro com userData.classe
+      const obj = hits.find(o => o.object.userData && o.object.userData.classe);
+      if (obj) {
+        setHoveredMesh(obj.object);
         return;
       }
     }
     setHoveredMesh(null);
   }
 
-  // === Clique (fatias + textos são clicáveis) ===
   function handleClick() {
     pyramidRaycaster.setFromCamera(pyramidMouse, pyramidCamera);
-    const intersects = pyramidRaycaster.intersectObjects(
-      pyramidGroup.children,
-      true
-    );
-    const classeHit = pickClasseFromIntersects(intersects);
-    if (classeHit) {
-      // deixar o selecionarClasse cuidar de achar o mesh certo
-      selecionarClasse(classeHit, null);
+    const hits = pyramidRaycaster.intersectObjects(pyramidGroup.children, true);
+    if (!hits.length) return;
+
+    const objHit = hits.find(o => o.object.userData && o.object.userData.classe);
+    if (objHit) {
+      const classe = objHit.object.userData.classe;
+      selecionarClasse(classe, null);
     }
   }
 
-  pyramidCanvas.addEventListener("mousemove", handlePointerMove);
+  pyramidCanvas.addEventListener("mousemove", pointerMove);
   pyramidCanvas.addEventListener("click", handleClick);
   window.addEventListener("resize", resizePyramid);
 
-  // === Loop ===
+  const clock = new THREE.Clock();
+
+  // ============================
+  //          LOOP
+  // ============================
   function animate() {
     requestAnimationFrame(animate);
 
-    currentRotY += (targetRotY - currentRotY) * 0.08;
+    const t = clock.getElapsedTime();
+
+    // Rotação suave
+    currentRotY += (targetRotY - currentRotY) * 0.07;
     pyramidGroup.rotation.y = currentRotY;
+
+    // Efeito "plasma" pulsando em cada camada
+    plasmaSegments.forEach((mesh, idx) => {
+      const pulse = 0.4 + 0.25 * Math.sin(t * 2.2 + idx);
+      const op    = 0.6 + 0.15 * Math.sin(t * 1.8 + idx * 0.7);
+
+      mesh.material.emissiveIntensity = pulse;
+      mesh.material.opacity = op;
+    });
+
+    // Partículas subindo
+    const posAttr = particleGeometry.getAttribute("position");
+    for (let i = 0; i < particleCount; i++) {
+      let y = posAttr.getY(i);
+      let x = posAttr.getX(i);
+      let z = posAttr.getZ(i);
+
+      y += speeds[i];                 // sobe
+      const swirl = Math.sin(t * 0.8 + x * 3 + z * 3) * 0.003;
+      x += swirl;
+      z -= swirl;
+
+      if (y > maxY) {
+        y = minY;
+      }
+
+      posAttr.setXYZ(i, x, y, z);
+    }
+    posAttr.needsUpdate = true;
+
+    // Textos sempre voltados para a câmera
+    pyramidGroup.children.forEach((child) => {
+      if (child instanceof THREE.Sprite) {
+        child.lookAt(pyramidCamera.position);
+      }
+    });
 
     pyramidRenderer.render(pyramidScene, pyramidCamera);
   }
 
   animate();
 }
+
 
 
 

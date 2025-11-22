@@ -592,3 +592,17 @@ h2 {
     gap: 8px;
   }
 }
+#class-modal-backdrop .modal-footnote {
+  color: #9ca3ff;  /* mude pra cor que quiser */
+}
+
+#btn-base,
+#btn-meio,
+#btn-topo {
+  color: #c4d3ff;          /* cor do texto */
+}
+
+.active-tag {
+  color: #0f172a;          /* texto quando selecionado */
+  background: #4f46e5;     /* fundo quando selecionado */
+}
