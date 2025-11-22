@@ -216,7 +216,9 @@ function initPyramid3D() {
   const h = rect.height || 260;
 
   pyramidCamera = new THREE.PerspectiveCamera(32, w / h, 0.1, 100);
-  pyramidCamera.position.set(0, 1.7, 4.6);
+  pyramidCamera.position.set(0, 1.1, 5.1);
+  pyramidCamera.lookAt(0, 0.55, 0);
+
 
   pyramidRenderer = new THREE.WebGLRenderer({
     canvas: pyramidCanvas,
