@@ -151,6 +151,9 @@ if (classModal) {
 }
 
 function initPyramid3D() {
+ if (pyramidCanvas.dataset.initialized) return;
+  pyramidCanvas.dataset.initialized = "true";
+
   if (!pyramidCanvas || !window.THREE) return;
 
   const scene = new THREE.Scene();
