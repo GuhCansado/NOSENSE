@@ -132,8 +132,8 @@ let pyramidScene, pyramidCamera, pyramidRenderer, pyramidGroup;
 let pyramidRaycaster, pyramidMouse;
 let hoveredMesh = null;
 let selectedMesh = null;
-let targetRotY = -0.4;
-let currentRotY = -0.4;
+let targetRotY = -0.35;
+let currentRotY = -0.35;
 
 function openClassModal() {
   if (!classModal) return;
@@ -215,8 +215,8 @@ function initPyramid3D() {
   const w = rect.width || 400;
   const h = rect.height || 260;
 
-  pyramidCamera = new THREE.PerspectiveCamera(35, w / h, 0.1, 100);
-  pyramidCamera.position.set(0, 2.2, 5);
+  pyramidCamera = new THREE.PerspectiveCamera(32, w / h, 0.1, 100);
+  pyramidCamera.position.set(0, 1.7, 4.6);
 
   pyramidRenderer = new THREE.WebGLRenderer({
     canvas: pyramidCanvas,
@@ -226,15 +226,15 @@ function initPyramid3D() {
   pyramidRenderer.setPixelRatio(window.devicePixelRatio || 1);
   pyramidRenderer.setSize(w, h, false);
 
-  const ambient = new THREE.AmbientLight(0xffffff, 0.5);
+  const ambient = new THREE.AmbientLight(0xffffff, 0.45);
   pyramidScene.add(ambient);
 
-  const dir = new THREE.DirectionalLight(0xffffff, 0.9);
+  const dir = new THREE.DirectionalLight(0xffffff, 0.95);
   dir.position.set(3, 5, 4);
   pyramidScene.add(dir);
 
   const point = new THREE.PointLight(0x7c7bff, 1.4, 12);
-  point.position.set(-2, 3, 3);
+  point.position.set(-2.2, 3.2, 3.5);
   pyramidScene.add(point);
 
   pyramidGroup = new THREE.Group();
@@ -242,21 +242,21 @@ function initPyramid3D() {
 
   const baseMat = new THREE.MeshStandardMaterial({
     color: 0x22c55e,
-    metalness: 0.4,
+    metalness: 0.45,
     roughness: 0.3,
     emissive: 0x16351f,
     emissiveIntensity: 0.3
   });
   const middleMat = new THREE.MeshStandardMaterial({
     color: 0x3b82f6,
-    metalness: 0.45,
+    metalness: 0.48,
     roughness: 0.3,
     emissive: 0x102b4f,
     emissiveIntensity: 0.3
   });
   const topMat = new THREE.MeshStandardMaterial({
     color: 0xef4444,
-    metalness: 0.5,
+    metalness: 0.52,
     roughness: 0.28,
     emissive: 0x3b1111,
     emissiveIntensity: 0.3
@@ -274,12 +274,14 @@ function initPyramid3D() {
     return mesh;
   }
 
-  const base = createSegment(1.7, 2.5, 0.7, baseMat, "base", -0.9);
-  const middle = createSegment(1.2, 1.7, 0.7, middleMat, "meio", -0.2);
-  const top = createSegment(0.7, 1.2, 0.7, topMat, "topo", 0.5);
+  const sliceHeight = 0.75;
+  const base = createSegment(1.7, 2.4, sliceHeight, baseMat, "base", -sliceHeight);
+  const middle = createSegment(1.2, 1.7, sliceHeight, middleMat, "meio", 0);
+  const top = createSegment(0.6, 1.2, sliceHeight, topMat, "topo", sliceHeight);
 
   pyramidGroup.rotation.x = THREE.MathUtils.degToRad(18);
   pyramidGroup.rotation.y = targetRotY;
+  pyramidGroup.position.y = 0.1;
 
   pyramidRaycaster = new THREE.Raycaster();
   pyramidMouse = new THREE.Vector2();
@@ -290,7 +292,7 @@ function initPyramid3D() {
     pyramidMouse.y = -((e.clientY - r.top) / r.height) * 2 + 1;
 
     const normalizedX = (e.clientX - r.left) / r.width - 0.5;
-    targetRotY = -0.4 + normalizedX * 0.4;
+    targetRotY = -0.35 + normalizedX * 0.35;
 
     pyramidRaycaster.setFromCamera(pyramidMouse, pyramidCamera);
     const intersects = pyramidRaycaster.intersectObjects(pyramidGroup.children);
@@ -334,7 +336,6 @@ function initPyramid3D() {
 
   pyramidCanvas.addEventListener("mousemove", handlePointerMove);
   pyramidCanvas.addEventListener("click", handleClick);
-
   window.addEventListener("resize", resizePyramid);
 
   function animate() {
