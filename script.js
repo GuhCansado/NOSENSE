@@ -138,8 +138,8 @@ let pyramidScene, pyramidCamera, pyramidRenderer, pyramidGroup;
 let pyramidRaycaster, pyramidMouse;
 let hoveredMesh = null;
 let selectedMesh = null;
-let targetRotY = -0.35;
-let currentRotY = -0.35;
+let targetRotY = 0;
+let currentRotY = 0;
 
 function openClassModal() {
   if (!classModal) return;
@@ -172,39 +172,41 @@ if (classModal) {
 function resizePyramid() {
   if (!pyramidRenderer || !pyramidCamera || !pyramidCanvas) return;
   const rect = pyramidCanvas.getBoundingClientRect();
-  const w = rect.width || 400;
-  const h = rect.height || 260;
+  const w = rect.width || 500;
+  const h = rect.height || 320;
   pyramidCamera.aspect = w / h;
   pyramidCamera.updateProjectionMatrix();
   pyramidRenderer.setSize(w, h, false);
 }
 
 function setSelectedMesh(mesh) {
-  if (selectedMesh) {
+  if (selectedMesh && selectedMesh.isMesh) {
     selectedMesh.scale.set(1, 1, 1);
     if (selectedMesh.material && selectedMesh.material.emissive) {
-      selectedMesh.material.emissiveIntensity = 0.3;
+      selectedMesh.material.emissiveIntensity = 0.4;
     }
   }
   selectedMesh = mesh;
-  if (selectedMesh && selectedMesh.material && selectedMesh.material.emissive) {
+  if (selectedMesh && selectedMesh.isMesh) {
     selectedMesh.scale.set(1.06, 1.08, 1.06);
-    selectedMesh.material.emissiveIntensity = 1.2;
+    if (selectedMesh.material && selectedMesh.material.emissive) {
+      selectedMesh.material.emissiveIntensity = 1.2;
+    }
   }
 }
 
 function setHoveredMesh(mesh) {
-  if (hoveredMesh && hoveredMesh !== selectedMesh) {
+  if (hoveredMesh && hoveredMesh !== selectedMesh && hoveredMesh.isMesh) {
     hoveredMesh.scale.set(1, 1, 1);
     if (hoveredMesh.material && hoveredMesh.material.emissive) {
-      hoveredMesh.material.emissiveIntensity = 0.3;
+      hoveredMesh.material.emissiveIntensity = 0.4;
     }
   }
   hoveredMesh = mesh;
-  if (hoveredMesh && hoveredMesh !== selectedMesh) {
+  if (hoveredMesh && hoveredMesh !== selectedMesh && hoveredMesh.isMesh) {
     hoveredMesh.scale.set(1.03, 1.04, 1.03);
     if (hoveredMesh.material && hoveredMesh.material.emissive) {
-      hoveredMesh.material.emissiveIntensity = 0.7;
+      hoveredMesh.material.emissiveIntensity = 0.8;
     }
   }
 }
@@ -265,8 +267,8 @@ function initPyramid3D() {
   }
 
   const baseMat = plasmaMaterial(0x22c55e);
-  const midMat  = plasmaMaterial(0x3b82f6);
-  const topMat  = plasmaMaterial(0xef4444);
+  const midMat = plasmaMaterial(0x3b82f6);
+  const topMat = plasmaMaterial(0xef4444);
 
   // Wireframe sutil por cima (efeito holograma)
   const outlineMaterial = new THREE.MeshBasicMaterial({
@@ -324,12 +326,23 @@ function initPyramid3D() {
   // ============================
   //   CRIA SEGMENTO DA PIRÂMIDE
   // ============================
-  function createSegment(top, bottom, height, mat, classe, y, labelText, labelColor) {
+  function createSegment(
+    top,
+    bottom,
+    height,
+    mat,
+    classe,
+    y,
+    labelText,
+    labelColor
+  ) {
     const geo = new THREE.CylinderGeometry(top, bottom, height, 4, 1, false);
     const mesh = new THREE.Mesh(geo, mat);
     mesh.rotation.y = Math.PI / 4;
     mesh.position.y = y;
     mesh.userData.classe = classe;
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
 
     const outline = new THREE.Mesh(geo, outlineMaterial);
     outline.rotation.copy(mesh.rotation);
@@ -351,11 +364,38 @@ function initPyramid3D() {
   // ============================
   //   ESTRUTURA DA PIRÂMIDE
   // ============================
-  const h = 1.1;
+  const segmentHeight = 1.1;
 
-  createSegment(1.9, 3.1, h * 1.05, baseMat, "base", -h * 1.1, "BASE", 0x86efac);
-  createSegment(1.15, 1.9, h * 0.98, midMat,  "meio",  0,        "MEIO", 0x93c5fd);
-  createSegment(0.55, 1.15, h * 0.9,  topMat, "topo",  h * 1.1,  "TOPO", 0xfca5a5);
+  createSegment(
+    1.9,
+    3.1,
+    segmentHeight * 1.05,
+    baseMat,
+    "base",
+    -segmentHeight * 1.1,
+    "BASE",
+    0x86efac
+  );
+  createSegment(
+    1.15,
+    1.9,
+    segmentHeight * 0.98,
+    midMat,
+    "meio",
+    0,
+    "MEIO",
+    0x93c5fd
+  );
+  createSegment(
+    0.55,
+    1.15,
+    segmentHeight * 0.9,
+    topMat,
+    "topo",
+    segmentHeight * 1.1,
+    "TOPO",
+    0xfca5a5
+  );
 
   // Inclinação inicial
   pyramidGroup.rotation.x = THREE.MathUtils.degToRad(20);
@@ -366,15 +406,15 @@ function initPyramid3D() {
   // ============================
   const particleCount = 420;
   const positions = new Float32Array(particleCount * 3);
-  const speeds    = new Float32Array(particleCount);
+  const speeds = new Float32Array(particleCount);
 
-  const radius = 1.6;      // raio da base das partículas
-  const minY   = -1.4;     // ponto mais baixo (abaixo da base)
-  const maxY   =  2.6;     // topo do volume
+  const radius = 1.6;
+  const minY = -1.4;
+  const maxY = 2.6;
 
   for (let i = 0; i < particleCount; i++) {
     const angle = Math.random() * Math.PI * 2;
-    const r     = Math.random() * radius * 0.8;
+    const r = Math.random() * radius * 0.8;
 
     const x = Math.cos(angle) * r;
     const z = Math.sin(angle) * r;
@@ -420,11 +460,15 @@ function initPyramid3D() {
     targetRotY = tilt * 0.6;
 
     pyramidRaycaster.setFromCamera(pyramidMouse, pyramidCamera);
-    const hits = pyramidRaycaster.intersectObjects(pyramidGroup.children, true);
+    const hits = pyramidRaycaster.intersectObjects(
+      pyramidGroup.children,
+      true
+    );
 
     if (hits.length > 0) {
-      // acha o primeiro com userData.classe
-      const obj = hits.find(o => o.object.userData && o.object.userData.classe);
+      const obj = hits.find(
+        (o) => o.object.userData && o.object.userData.classe
+      );
       if (obj) {
         setHoveredMesh(obj.object);
         return;
@@ -435,10 +479,15 @@ function initPyramid3D() {
 
   function handleClick() {
     pyramidRaycaster.setFromCamera(pyramidMouse, pyramidCamera);
-    const hits = pyramidRaycaster.intersectObjects(pyramidGroup.children, true);
+    const hits = pyramidRaycaster.intersectObjects(
+      pyramidGroup.children,
+      true
+    );
     if (!hits.length) return;
 
-    const objHit = hits.find(o => o.object.userData && o.object.userData.classe);
+    const objHit = hits.find(
+      (o) => o.object.userData && o.object.userData.classe
+    );
     if (objHit) {
       const classe = objHit.object.userData.classe;
       selecionarClasse(classe, null);
@@ -466,7 +515,7 @@ function initPyramid3D() {
     // Efeito "plasma" pulsando em cada camada
     plasmaSegments.forEach((mesh, idx) => {
       const pulse = 0.4 + 0.25 * Math.sin(t * 2.2 + idx);
-      const op    = 0.6 + 0.15 * Math.sin(t * 1.8 + idx * 0.7);
+      const op = 0.6 + 0.15 * Math.sin(t * 1.8 + idx * 0.7);
 
       mesh.material.emissiveIntensity = pulse;
       mesh.material.opacity = op;
@@ -475,11 +524,11 @@ function initPyramid3D() {
     // Partículas subindo
     const posAttr = particleGeometry.getAttribute("position");
     for (let i = 0; i < particleCount; i++) {
-      let y = posAttr.getY(i);
       let x = posAttr.getX(i);
+      let y = posAttr.getY(i);
       let z = posAttr.getZ(i);
 
-      y += speeds[i];                 // sobe
+      y += speeds[i];
       const swirl = Math.sin(t * 0.8 + x * 3 + z * 3) * 0.003;
       x += swirl;
       z -= swirl;
@@ -504,10 +553,6 @@ function initPyramid3D() {
 
   animate();
 }
-
-
-
-
 
 /* ===========================================
    TAGS CLICÁVEIS + SINCRONIZAÇÃO
@@ -552,7 +597,7 @@ function selecionarClasse(classe, meshFrom3D) {
     setSelectedMesh(meshFrom3D);
   } else if (pyramidGroup) {
     const alvo = pyramidGroup.children.find(
-      (m) => m.userData && m.userData.classe === classe
+      (m) => m.isMesh && m.userData && m.userData.classe === classe
     );
     if (alvo) setSelectedMesh(alvo);
   }
