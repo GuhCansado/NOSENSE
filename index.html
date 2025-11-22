@@ -1,112 +1,56 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <title>Vozes da Pirâmide</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="style.css" />
-  <!-- Three.js para a pirâmide 3D -->
-  <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NoSense — Vozes da Pirâmide</title>
+  <link rel="stylesheet" href="style.css">
+
+  <!-- THREE.JS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
 </head>
+
 <body data-theme="dark">
-  <div class="page-shell">
-    <!-- HEADER -->
-    <header class="app-header">
-      <div class="header-left">
-        <div class="brand-mark">△</div>
-        <div class="brand-info">
-          <h1>Vozes da pirâmide</h1>
-          <div class="status-row">
-            <span id="status-dot" class="status-dot offline"></span>
-            <span id="status-text">Conectando ao servidor...</span>
-          </div>
-        </div>
-      </div>
-      <div class="header-right">
-        <button id="theme-toggle" class="icon-btn" aria-label="Alternar tema">
-          ☾
-        </button>
-      </div>
-    </header>
 
-    <!-- MAIN -->
-    <main class="app-main">
-      <!-- COLUNA ÚNICA CENTRAL -->
-      <section class="composer-card glass-card">
-        <div class="composer-top">
-          <h2>Desabafe, anonimamente.</h2>
-          <p class="subtitle">
-            Compartilhe o que acontece aí dentro. Sem nomes, sem rastros — só a sua visão na pirâmide.
-          </p>
-        </div>
+  <!-- STATUS -->
+  <header class="status-header">
+    <div id="status-dot" class="status-dot offline"></div>
+    <div id="status-text">Carregando...</div>
+    <button id="theme-toggle">☾</button>
+  </header>
 
-        <div class="composer-body">
-          <textarea
-            id="post-text"
-            class="composer-input"
-            rows="3"
-            maxlength="800"
-            placeholder="Ex: Metas impossíveis, pressão absurda, promessas não cumpridas..."
-          ></textarea>
-        </div>
+  <!-- POST BOX -->
+  <section class="post-box">
+    <textarea id="post-text" placeholder="Compartilhe seu relato..."></textarea>
+    <div id="post-error" class="post-error"></div>
+    <button id="btn-postar" class="primary-btn">Postar</button>
+  </section>
 
-        <div class="composer-footer">
-          <div class="composer-meta">
-            <span id="post-error" class="error-text"></span>
-          </div>
-          <button id="btn-postar" class="primary-btn">
-            Postar anonimamente
-          </button>
-        </div>
-      </section>
+  <!-- FEED -->
+  <section id="feed" class="feed"></section>
 
-      <!-- FEED -->
-      <section class="feed-card glass-card">
-        <div class="feed-header">
-          <h2>Relatos recentes</h2>
-          <button class="ghost-btn" type="button" onclick="carregarPosts()">
-            Atualizar
-          </button>
-        </div>
-
-        <div id="feed" class="feed-list">
-          <!-- preenchido via JS -->
-        </div>
-      </section>
-    </main>
-  </div>
-
-  <!-- BOTÃO AJUDA -->
-  <button class="floating-help" title="Como funciona?">
-    ?
-  </button>
-
-  <!-- MODAL PIRÂMIDE 3D -->
+  <!-- MODAL DE CLASSE -->
   <div id="class-modal-backdrop" class="modal-backdrop">
-    <div class="modal glass-panel">
-      <button id="modal-close" class="modal-close" aria-label="Fechar">&times;</button>
+    <div class="class-modal">
+      <button id="modal-close" class="modal-close">✕</button>
 
-      <div class="modal-header">
-        <h3>De onde vem sua voz?</h3>
-        <p>Selecione seu lugar na pirâmide para contextualizar o seu relato.</p>
+      <h2>De onde vem sua voz?</h2>
+      <p>Selecione seu lugar na pirâmide para contextualizar o seu relato.</p>
+
+      <canvas id="pyramid-canvas"></canvas>
+
+      <div class="class-buttons">
+        <button id="btn-base" class="class-tag">Base — chão de fábrica</button>
+        <button id="btn-meio" class="class-tag">Meio — coordenação</button>
+        <button id="btn-topo" class="class-tag">Topo — diretoria</button>
       </div>
 
-      <div class="pyramid-container">
-        <canvas id="pyramid-canvas"></canvas>
-      </div>
-
-      <div class="pyramid-legend">
-        <span class="legend-chip base">Base &mdash; chão de fábrica</span>
-        <span class="legend-chip middle">Meio &mdash; coordenação</span>
-        <span class="legend-chip top">Topo &mdash; diretoria</span>
-      </div>
-
-      <p class="modal-tip">
+      <p class="modal-info">
         Sua posição só altera o avatar e o contexto. Sua identidade continua totalmente anônima.
       </p>
     </div>
   </div>
 
-  <script src="script.js"></script>
+  <script src="scripts.js"></script>
 </body>
 </html>

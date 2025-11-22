@@ -64,7 +64,9 @@ function setButtonLoading(btn, isLoading, label = "Carregando...") {
 function getFingerprint() {
   let fp = localStorage.getItem("vp_fingerprint");
   if (!fp) {
-    fp = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2);
+    fp = crypto.randomUUID
+      ? crypto.randomUUID()
+      : Math.random().toString(36).slice(2);
     localStorage.setItem("vp_fingerprint", fp);
   }
   return fp;
@@ -219,7 +221,6 @@ function initPyramid3D() {
   pyramidCamera.position.set(0, 1.1, 5.1);
   pyramidCamera.lookAt(0, 0.55, 0);
 
-
   pyramidRenderer = new THREE.WebGLRenderer({
     canvas: pyramidCanvas,
     antialias: true,
@@ -265,7 +266,14 @@ function initPyramid3D() {
   });
 
   function createSegment(widthTop, widthBottom, height, mat, classe, y) {
-    const geo = new THREE.CylinderGeometry(widthTop, widthBottom, height, 4, 1, false);
+    const geo = new THREE.CylinderGeometry(
+      widthTop,
+      widthBottom,
+      height,
+      4,
+      1,
+      false
+    );
     const mesh = new THREE.Mesh(geo, mat);
     mesh.rotation.y = Math.PI / 4;
     mesh.position.y = y;
@@ -277,12 +285,11 @@ function initPyramid3D() {
   }
 
   const sliceHeight = 0.75;
-  const base = createSegment(1.7, 2.4, sliceHeight, baseMat, "base", -sliceHeight);
-  const middle = createSegment(1.2, 1.7, sliceHeight, middleMat, "meio", 0);
-  const top = createSegment(0.6, 1.2, sliceHeight, topMat, "topo", sliceHeight);
+  createSegment(1.7, 2.4, sliceHeight, baseMat, "base", -sliceHeight);
+  createSegment(1.2, 1.7, sliceHeight, middleMat, "meio", 0);
+  createSegment(0.6, 1.2, sliceHeight, topMat, "topo", sliceHeight);
 
   pyramidGroup.rotation.x = THREE.MathUtils.degToRad(12);
-
   pyramidGroup.rotation.y = targetRotY;
   pyramidGroup.position.y = 0.55;
 
@@ -298,7 +305,9 @@ function initPyramid3D() {
     targetRotY = -0.35 + normalizedX * 0.35;
 
     pyramidRaycaster.setFromCamera(pyramidMouse, pyramidCamera);
-    const intersects = pyramidRaycaster.intersectObjects(pyramidGroup.children);
+    const intersects = pyramidRaycaster.intersectObjects(
+      pyramidGroup.children
+    );
     if (intersects.length > 0) {
       setHoveredMesh(intersects[0].object);
     } else {
@@ -312,13 +321,16 @@ function initPyramid3D() {
     pyramidMouse.y = -((e.clientY - r.top) / r.height) * 2 + 1;
 
     pyramidRaycaster.setFromCamera(pyramidMouse, pyramidCamera);
-    const intersects = pyramidRaycaster.intersectObjects(pyramidGroup.children);
+    const intersects = pyramidRaycaster.intersectObjects(
+      pyramidGroup.children
+    );
     if (intersects.length > 0) {
       const mesh = intersects[0].object;
       const classe = mesh.userData.classe;
       if (classe) {
         classeEscolhida = classe;
         setSelectedMesh(mesh);
+        aplicarGlowTexto(classe);
         closeClassModal();
         if (acaoPendente) {
           if (acaoPendente.tipo === "post") {
@@ -351,6 +363,63 @@ function initPyramid3D() {
   }
   animate();
 }
+
+/* ===========================================
+   BOTÕES DE TEXTO (TAGS CLICÁVEIS)
+=========================================== */
+
+const btnBase = document.getElementById("btn-base");
+const btnMeio = document.getElementById("btn-meio");
+const btnTopo = document.getElementById("btn-topo");
+
+function limparSelecaoTexto() {
+  [btnBase, btnMeio, btnTopo].forEach((b) => {
+    if (!b) return;
+    b.classList.remove("active-tag");
+  });
+}
+
+function aplicarGlowTexto(classe) {
+  limparSelecaoTexto();
+  const map = {
+    base: btnBase,
+    meio: btnMeio,
+    topo: btnTopo
+  };
+  if (map[classe]) map[classe].classList.add("active-tag");
+}
+
+function selecionarClassePorTexto(classe) {
+  classeEscolhida = classe;
+  aplicarGlowTexto(classe);
+
+  if (pyramidGroup) {
+    const alvo = pyramidGroup.children.find(
+      (m) => m.userData && m.userData.classe === classe
+    );
+    if (alvo) setSelectedMesh(alvo);
+  }
+
+  closeClassModal();
+
+  if (acaoPendente) {
+    if (acaoPendente.tipo === "post") {
+      enviarPost(acaoPendente.texto);
+    } else if (acaoPendente.tipo === "reply") {
+      enviarResposta(
+        acaoPendente.postId,
+        acaoPendente.texto,
+        acaoPendente.textarea,
+        acaoPendente.postEl
+      );
+    }
+    acaoPendente = null;
+  }
+}
+
+if (btnBase) btnBase.addEventListener("click", () => selecionarClassePorTexto("base"));
+if (btnMeio) btnMeio.addEventListener("click", () => selecionarClassePorTexto("meio"));
+if (btnTopo) btnTopo.addEventListener("click", () => selecionarClassePorTexto("topo"));
 
 /* ===========================================
    POSTAR
@@ -437,7 +506,9 @@ function renderFeed(posts) {
         </div>
         <div class="post-header-info">
           <div class="alias">${escapeHtml(p.alias || "Anônimo")}</div>
-          <div class="meta-line">${new Date(p.created_at).toLocaleString("pt-BR")}</div>
+          <div class="meta-line">${new Date(p.created_at).toLocaleString(
+            "pt-BR"
+          )}</div>
         </div>
       </div>
 
@@ -532,7 +603,9 @@ function renderFeed(posts) {
       const texto = replyTextarea.value.trim();
       if (!texto) return;
       if (!classeEscolhida) {
-        if (postError) postError.textContent = "Escolha sua posição na pirâmide para responder.";
+        if (postError)
+          postError.textContent =
+            "Escolha sua posição na pirâmide para responder.";
         acaoPendente = {
           tipo: "reply",
           texto,
@@ -584,8 +657,11 @@ async function carregarRespostas(id, postEl) {
   try {
     const r = await fetch(`${API}/api/posts/${id}/replies`);
     let data = await r.json();
-    let replies = Array.isArray(data) ? data :
-      (Array.isArray(data.replies) ? data.replies : []);
+    let replies = Array.isArray(data)
+      ? data
+      : Array.isArray(data.replies)
+      ? data.replies
+      : [];
 
     const box = postEl.querySelector(".replies");
     box.innerHTML = "";
@@ -606,7 +682,8 @@ async function carregarRespostas(id, postEl) {
     btn.textContent = `Ver respostas (${replies.length})`;
   } catch (e) {
     console.error("Erro ao carregar respostas:", e);
-    postEl.querySelector(".replies").innerHTML = "Erro ao carregar respostas.";
+    postEl.querySelector(".replies").innerHTML =
+      "Erro ao carregar respostas.";
   }
 }
 
